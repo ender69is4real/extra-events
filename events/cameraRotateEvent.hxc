@@ -1,0 +1,200 @@
+import funkin.play.PlayState;
+import funkin.Conductor;
+import funkin.modding.events.ScriptEvent;
+import funkin.modding.module.Module;
+import flixel.FlxG;
+import flixel.tweens.FlxTween;
+import flixel.util.FlxTimer;
+import flixel.tweens.FlxEase;
+import flixel.FlxCamera;
+import funkin.graphics.FunkinSprite;
+import funkin.Paths;
+import openfl.utils.Assets;
+import funkin.util.ReflectUtil;
+
+import funkin.play.event.SongEvent;
+import funkin.data.event.SongEventSchema;
+
+import funkin.modding.PolymodErrorHandler;
+
+import funkin.ui.options.OptionsState;
+import flixel.util.FlxSave;
+import funkin.modding.module.ModuleHandler;
+import funkin.data.event.SongEventRegistry;
+
+// class CameraRotateManager extends Module {
+//   function new() {
+//       super("cameraRotateManager", 1);
+//   }
+//   public var save:FlxSave;
+
+//   override function onCreate(event) {
+//       super.onCreate(event);
+//       save = new FlxSave();
+//       save.bind("extra-screen-effects");
+//       save.data.isRotateEnabled = (save.data.isRotateEnabled != null) ? save.data.isRotateEnabled : false; // Default is false
+//       if (!save.data.isRotateEnabled || save.data.isRotateEnabled == null) {
+//         // SongEventRegistry.resetEvents([SongEventRegistry.getEvent("cameraRotateEvent")]);
+//       }
+
+//       save.flush();
+//   }
+
+//   override function onStateChangeEnd(event) {
+//     super.onStateChangeEnd(event);
+//     if (Std.isOfType(event.targetState, OptionsState)) {
+//         var prefs = event.targetState.pages.get('preferences'); 
+//         if (prefs != null) {
+//             save = new FlxSave();
+//             save.bind("extra-screen-effects");
+//             prefs.createPrefItemCheckbox("Extra Screen Effects", "If unchecked, extra screen effects will be disabled.", (value:Bool) -> {
+//                 save.data.isRotateEnabled = value;
+//                 save.flush();
+//                 // SongEventRegistry.resetEvents([SongEventRegistry.getEvent("cameraRotateEvent")]);
+//             }, save.data.isRotateEnabled);
+//         }
+//     }
+// }
+// }
+
+class CameraRotateEvent extends SongEvent {
+    function new() {
+        super("cameraRotateEvent");
+    }
+
+    public var eventTitle:String = "Camera Rotate";
+
+    // Probably best if we could change both without placing two events
+    public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
+    public var DEFAULT_CAMHUD_ANGLE:Float = 10.0;
+    public var DEFAULT_DURATION:Float = 4.0;
+    public var DEFAULT_EASE:String = 'linear';
+
+    public var camGameRotateTween:FlxTween = null;
+    public var camHUDRotateTween:FlxTween = null;
+
+    override function handleEvent(data):Void {
+        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+        if (PlayState.instance.isMinimalMode) return;
+
+        var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
+        var toAngle_camHUD:Float = data.getFloat('angleCamHUD') != null ? data.getFloat('angleCamHUD') : DEFAULT_CAMHUD_ANGLE;
+        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+        var ease:String = data.getString('ease') != null ? data.getString('ease') : DEFAULT_EASE;
+
+        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+        var easeFunction:Null<Float->Float>;
+
+        if (duration <= 0) {
+          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+        }
+
+        switch (ease) {
+            case 'INSTANT':
+              if (camGameRotateTween != null) camGameRotateTween.cancel();
+              if (camHUDRotateTween != null) camHUDRotateTween.cancel();
+              PlayState.instance.camGame.angle = toAngle_camGame;
+              PlayState.instance.camHUD.angle = toAngle_camHUD;
+              return;
+            default:
+              easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
+              if (easeFunction == null){
+                  // trace("Invalid easing function: " + ease);
+                  return;
+                }
+              rotateCamGame(toAngle_camGame, durSeconds, easeFunction);
+              rotateCamHUD(toAngle_camHUD, durSeconds, easeFunction);
+        }
+        // trace("Angle: " + toAngle + " | Duration: " + duration + " | Easing: " + ease + " | Ease Function: " + easeFunction);
+    }
+
+    public function rotateCamGame(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+      cancelCamGameRotation();
+      if (PlayState.instance.camGame != null) camGameRotateTween = FlxTween.tween(PlayState.instance.camGame, {angle: toAngle}, duration, {ease: ease});
+    }
+
+    public function rotateCamHUD(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+      cancelCamHUDRotation();
+      if (PlayState.instance.camHUD != null) camHUDRotateTween = FlxTween.tween(PlayState.instance.camHUD, {angle: toAngle}, duration, {ease: ease});
+    }
+
+    public function cancelCamGameRotation() {
+      if (camGameRotateTween != null) camGameRotateTween.cancel();
+    }
+
+    public function cancelCamHUDRotation() {
+      if (camHUDRotateTween != null) camHUDRotateTween.cancel();
+    }
+
+    public override function getIconPath(){
+      return 'ui/chart-editor/events/cameraRotateEvent';
+    }
+
+    public override function getTitle() {
+        return eventTitle;
+    }
+
+    override function getEventSchema()
+        {
+          return [
+            {
+              name: 'angleCamGame',
+              title: 'CamGame Angle',
+              defaultValue: 10.0,
+              step: 0.5,
+              type: "float",
+              units: 'degrees'
+            },
+            {
+              name: 'angleCamHUD',
+              title: 'CamHUD Angle',
+              defaultValue: 10.0,
+              step: 0.5,
+              type: "float",
+              units: 'degrees'
+            },
+            {
+              name: 'duration',
+              title: 'Duration',
+              defaultValue: 4.0,
+              step: 0.5,
+              type: "float",
+              units: 'steps'
+            },
+            {
+              name: 'ease',
+              title: 'Easing Type',
+              defaultValue: 'linear',
+              type: "enum",
+              keys: [
+                'Linear' => 'linear',
+                'Instant (Ignores Duration)' => 'INSTANT',
+                'Sine In' => 'sineIn',
+                'Sine Out' => 'sineOut',
+                'Sine In/Out' => 'sineInOut',
+                'Quad In' => 'quadIn',
+                'Quad Out' => 'quadOut',
+                'Quad In/Out' => 'quadInOut',
+                'Cube In' => 'cubeIn',
+                'Cube Out' => 'cubeOut',
+                'Cube In/Out' => 'cubeInOut',
+                'Quart In' => 'quartIn',
+                'Quart Out' => 'quartOut',
+                'Quart In/Out' => 'quartInOut',
+                'Quint In' => 'quintIn',
+                'Quint Out' => 'quintOut',
+                'Quint In/Out' => 'quintInOut',
+                'Expo In' => 'expoIn',
+                'Expo Out' => 'expoOut',
+                'Expo In/Out' => 'expoInOut',
+                'Smooth Step In' => 'smoothStepIn',
+                'Smooth Step Out' => 'smoothStepOut',
+                'Smooth Step In/Out' => 'smoothStepInOut',
+                'Elastic In' => 'elasticIn',
+                'Elastic Out' => 'elasticOut',
+                'Elastic In/Out' => 'elasticInOut'
+              ]
+            }
+          ];
+        }
+}

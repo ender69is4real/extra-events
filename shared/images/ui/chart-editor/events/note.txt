@@ -1,0 +1,12 @@
+.LOG
+4:12 PM 2/23/2025
+Quick tutorial on this because I'm not sure
+if coders and artists are aware you could make animated events
+
+I used Adobe Animate 2022 for this
+Size must be 320x320
+
+Rule of thumb is:
+It is absolutely necessary to account for dark theme and light theme
+meaning, you can't have the colors blend to the background
+or look similar to the grid

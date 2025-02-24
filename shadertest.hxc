@@ -1,0 +1,42 @@
+import funkin.play.PlayState;
+import funkin.Conductor;
+import funkin.modding.events.ScriptEvent;
+import funkin.modding.module.Module;
+import funkin.ui.AtlasText;
+import flixel.FlxG;
+import flixel.tweens.FlxTween;
+import flixel.util.FlxTimer;
+import flixel.tweens.FlxEase;
+import flixel.FlxCamera;
+import funkin.graphics.FunkinSprite;
+import funkin.Paths;
+import openfl.utils.Assets;
+import funkin.play.PlayState;
+import funkin.Conductor;
+import flixel.tweens.FlxTween;
+import flixel.FlxCamera;
+import flixel.tweens.FlxEase;
+import funkin.util.ReflectUtil;
+
+import openfl.filters.ShaderFilter;
+import funkin.play.event.SongEvent;
+import funkin.modding.base.ScriptedFlxRuntimeShader;
+import flixel.addons.display.FlxRuntimeShader;
+
+class shaderTest extends Module {
+  var vignetteShader:FlxRuntimeShader;
+  var vignetteFilter:ShaderFilter;
+  public function new() {
+		super("shaderTest", 1);
+	}
+
+	public override function onSongLoaded(e) {
+    super.onSongLoaded(e);
+    // vignetteShader = ScriptedFlxRuntimeShader.init('VignetteEffect');
+    // vignetteShader.scriptCall("setStrength", [15.0]);
+    // vignetteShader.scriptCall("setReach", [1.0]);
+
+    // vignetteFilter = new ShaderFilter(vignetteShader);
+		// FlxG.camera.filters = [vignetteFilter];
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Extra Events",
+  "description": "Adds more events to experiment with in your charts!",
+  "api_version": "0.5.3",
+  "mod_version": "1.0.0",
+  "contributors": [
+    {"name": "MAZ12211", "role": "Coded everything"},
+    {"name": "Psych Ward's base game channels", "role": "Major code help", "url": "https://discord.gg/psychengine"},
+    {"name": "Funkin's discussions page", "role": "Major code help", "url": "https://github.com/FunkinCrew/Funkin/discussions"}
+  ],
+  "license": "MIT"
+}

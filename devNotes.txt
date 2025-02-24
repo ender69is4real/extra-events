@@ -1,0 +1,36 @@
+.LOG
+10:25 PM 1/11/2025
+There were moments where I wanted to add a specifc camera effect in my charts
+but couldn't so I made this
+Plan: Have camera shaders such as vignete and bloom and chromatic scale and Film Grain and Lens (Not too sure about the last two)
+
+All of them has to support easing and the time should be steps instead of seconds
+All of them should be in CamGame (maybe make it a choice later on?)
+
+Event properties
+Vignete:
+- Intensity
+- Easing type
+- Length in steps
+
+Bloom:
+- Intensity
+- Easing type
+- Length in steps
+
+Chroma:
+- Intensity
+- Easing type
+- Length in steps
+
+11:51 AM 2/21/2025
+Since I'm having trouble with shaders, I went for simpler events
+that I or others may need such as camera rotation and camera shake event
+I should do a fade in/out camera effect too with colors
+
+9:08 PM 2/21/2025
+Couldn't do it with colors lol, we'll stick with the common color which is black
+I should also do camera flash event sticking with the white color and maybe a toggle to have the red color too as it's somewhat common
+
+10:58 AM 2/24/2025
+I think I'm okay with this one, current events are in and work fine

@@ -1,0 +1,77 @@
+import funkin.play.PlayState;
+import funkin.Conductor;
+import flixel.FlxG;
+import flixel.FlxCamera;
+import funkin.modding.PolymodErrorHandler;
+
+import funkin.play.event.SongEvent;
+
+class CameraShakeEvent extends SongEvent {
+    function new() {
+        super("cameraShakeEvent");
+    }
+
+    public var eventTitle:String = "Camera Shake";
+    // Probably best if we could change both without placing two events
+    public var DEFAULT_CAMGAME_INTENSITY:Float = 0.02;
+    public var DEFAULT_CAMHUD_INTENSITY:Float = 0.01;
+    public var DEFAULT_DURATION:Float = 4.0;
+
+    // public var tween:FlxTween = null; // Can't figure out how to do easing on shaking effects
+
+    override function handleEvent(data):Void {
+        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+        if (PlayState.instance.isMinimalMode) return;
+
+        var intensity_CamGame:Float = data.getFloat('intensityCamGame') != null ? data.getFloat('intensityCamGame') : DEFAULT_CAMGAME_INTENSITY;
+        var intensity_CamHUD:Float = data.getFloat('intensityCamHUD') != null ? data.getFloat('intensityCamHUD') : DEFAULT_CAMHUD_INTENSITY;
+        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+
+        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+
+        if (duration <= 0) {
+          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+        }
+
+        if (intensity_CamGame != 0) FlxG.camera.shake(intensity_CamGame, durSeconds);
+        if (intensity_CamHUD != 0) PlayState.instance.camHUD.shake(intensity_CamHUD, durSeconds);
+    }
+
+    public override function getTitle() {
+        return eventTitle;
+    }
+
+    public override function getIconPath(){
+      return 'ui/chart-editor/events/cameraShakeEvent';
+    }
+
+    override function getEventSchema(){
+          return [
+            {
+              name: 'intensityCamGame',
+              title: 'CamGame Intensity',
+              defaultValue: 0.02,
+              step: 0.01,
+              type: "float",
+              units: 'x'
+            },
+            {
+              name: 'intensityCamHUD',
+              title: 'CamHUD Intensity',
+              defaultValue: 0.01,
+              step: 0.01,
+              type: "float",
+              units: 'x'
+            },
+            {
+              name: 'duration',
+              title: 'Duration',
+              defaultValue: 4.0,
+              step: 0.5,
+              type: "float",
+              units: 'steps'
+            }
+          ];
+        }
+    }
+

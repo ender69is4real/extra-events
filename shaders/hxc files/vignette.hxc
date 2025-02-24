@@ -1,0 +1,29 @@
+import openfl.filters.ShaderFilter;
+import flixel.addons.display.FlxRuntimeShader;
+
+class VignetteEffect extends FlxRuntimeShader
+{
+  public var uStrength:Float;
+  public var uReach:Float;
+
+  public function new()
+    {
+      var fragText:String = Assets.getText(Paths.frag('vignette'));
+      super(fragText);
+    }
+
+    function setStrength(value:Float):Void{
+      this.setFloat('uStrength', value);
+      return uStrength = value;
+    }
+
+    function setReach(value:Float):Void{
+      this.setFloat('uReach', value);
+      return uReach = value;
+    }
+
+    function update(elapsed:Float) {
+      setStrength(uStrength * elapsed);
+      setReach(uReach * elapsed);
+    }
+}

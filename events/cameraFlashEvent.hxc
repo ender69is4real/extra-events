@@ -1,0 +1,76 @@
+import funkin.play.PlayState;
+import funkin.Conductor;
+import flixel.FlxG;
+
+import funkin.play.event.SongEvent;
+import funkin.data.event.SongEventSchema;
+
+import funkin.modding.PolymodErrorHandler;
+// import flixel.util.FlxColor; // A dream wish for now
+
+class CameraFlashEvent extends SongEvent {
+    function new() {
+        super("cameraFlashEvent");
+    }
+
+    public var eventTitle:String = "Camera Flash";
+    /*
+    * white = 0xFFFFFFFF
+    * red = 0xFFFF0000
+    */
+    public var DEFAULT_DURATION:Float = 1.0;
+    public var DEFAULT_APPLYTOHUD:Bool = false; // self-explanatory, default to false for players who want to read the notes
+    public var DEFAULT_ISRED:Bool = false; // It's somewhat common in mods
+
+    override function handleEvent(data):Void {
+        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+        if (PlayState.instance.isMinimalMode) return;
+
+        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+        var applyToHud:Bool = data.getBool('applyToHud') != null ? data.getBool('applyToHud') : DEFAULT_APPLYTOHUD;
+        var isRed:Bool = data.getBool('isRed') != null ? data.getBool('isRed') : DEFAULT_ISRED;
+
+        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+
+        if (duration <= 0) {
+          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+        }
+
+        if (!applyToHud) {
+          FlxG.camera.flash((isRed ? 0xFFFF0000 : 0xFFFFFFFF), durSeconds);
+        } else {
+          PlayState.instance.camHUD.flash((isRed ? 0xFFFF0000 : 0xFFFFFFFF), durSeconds);
+        }
+
+    }
+
+    public override function getTitle() {
+        return eventTitle;
+    }
+
+    override function getEventSchema()
+        {
+          return [
+            {
+              name: 'duration',
+              title: 'Duration',
+              defaultValue: 1.0,
+              step: 1.0,
+              type: "float",
+              units: 'steps'
+            },
+            {
+              name: 'applyToHud',
+              title: 'Apply to camHUD?',
+              defaultValue: false,
+              type: "bool"
+            },
+            {
+              name: 'isRed',
+              title: 'Apply red color?\n(default is white)',
+              defaultValue: false,
+              type: "bool"
+            }
+          ];
+        }
+}
