@@ -63,6 +63,7 @@ class CameraRotateEvent extends SongEvent {
     }
 
     public var eventTitle:String = "Camera Rotate";
+public var isEnabled:Module = ModuleHandler.getModule("").scriptGet("");
 
     // Probably best if we could change both without placing two events
     public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
