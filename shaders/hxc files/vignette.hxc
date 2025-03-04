@@ -23,7 +23,7 @@ class VignetteEffect extends FlxRuntimeShader
     }
 
     function update(elapsed:Float) {
-      setStrength(uStrength * elapsed);
-      setReach(uReach * elapsed);
+      setStrength(uStrength += elapsed);
+      setReach(uReach += elapsed);
     }
 }

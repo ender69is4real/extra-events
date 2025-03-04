@@ -1,12 +1,10 @@
 import funkin.play.PlayState;
-import funkin.Conductor;
 import funkin.modding.events.ScriptEvent;
 import funkin.modding.module.Module;
 import funkin.ui.AtlasText;
 import flixel.FlxG;
 import flixel.util.FlxTimer;
 import flixel.tweens.FlxEase;
-import flixel.FlxCamera;
 import funkin.graphics.FunkinSprite;
 import funkin.Paths;
 import openfl.utils.Assets;
@@ -16,16 +14,10 @@ import flixel.tweens.FlxTween;
 import flixel.FlxCamera;
 import funkin.util.ReflectUtil;
 import openfl.filters.ShaderFilter;
-import funkin.play.event.SongEvent;
 import funkin.modding.base.ScriptedFlxRuntimeShader;
 // https://github.com/HaxeFlixel/flixel-addons/blob/671ad890e71628bfe43403241ede0d933513e6cf/flixel/addons/display/FlxRuntimeShader.hx
 import flixel.addons.display.FlxRuntimeShader;
 
-// Data from the chart
-// import funkin.data.song.SongData;
-// import funkin.data.song.SongData.SongEventData;
-// import funkin.data.song.SongData.SongEventDataRaw; 
-// Data from the event schema
 import funkin.play.event.SongEvent;
 
 class VignetteHandler extends SongEvent {
@@ -35,6 +27,8 @@ class VignetteHandler extends SongEvent {
     
     public var vignetteShader:FlxRuntimeShader;
     public var vignetteFilter:ShaderFilter;
+
+    public var eventTitle:String = "Vignette Effect\n(WIP IT DOES NOT WORK)";
 
     public var DEFAULT_STRENGTH:Float = 15.0;
     public var strength_tween:FlxTween = null;
@@ -55,26 +49,22 @@ class VignetteHandler extends SongEvent {
         vignetteShader = ScriptedFlxRuntimeShader.init('VignetteEffect');
     
         vignetteFilter = new ShaderFilter(vignetteShader);
-        // if (vignetteFilter != null && FlxG.camera.filters.indexOf(vignetteFilter) == -1) {
-        //     FlxG.camera.filters.push(vignetteFilter);
-        // }
         if (vignetteFilter != null) {
           FlxG.camera.filters = [vignetteFilter];
         }
 
-        // var strength:Float = data.getFloat('strength') != null ? data.getFloat('strength') : DEFAULT_STRENGTH;
-        // var reach:Float = data.getFloat('reach') != null ? data.getFloat('reach') : DEFAULT_REACH;
-        
         var strength:Float = data.getFloat('strength') != null ? vignetteShader.scriptCall("setStrength", [data.getFloat('strength')]) : vignetteShader.scriptCall("setStrength", [DEFAULT_STRENGTH]);
         var reach:Float = data.getFloat('reach') != null ? vignetteShader.scriptCall("setReach", [data.getFloat('reach')]) : vignetteShader.scriptCall("setReach", [DEFAULT_REACH]);
         
-        // var strength:Float = data.getFloat('strength') != null ? vignetteShader.setFloat("uStrength", data.getFloat('strength')) : vignetteShader.setFloat("uStrength", DEFAULT_STRENGTH);
-        // var reach:Float = data.getFloat('reach') != null ? vignetteShader.setFloat("uReach", data.getFloat('reach')) : vignetteShader.setFloat("uReach", DEFAULT_REACH);
         var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
         var ease:String = data.getString('ease') != null ? data.getString('ease') : DEFAULT_EASE;
         
         var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
         var easeFunction:Null<Float->Float>;
+
+        if (duration <= 0) {
+          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+        }
 
         switch (ease) {
             case 'INSTANT': // Cancel the tween here.
@@ -87,36 +77,28 @@ class VignetteHandler extends SongEvent {
                 trace("Invalid easing function: " + ease);
                 return;
               }
-              // createVig(strength, reach, durSeconds, easeFunction);
-              FlxTween.num(vignetteShader.getFloat('uStrength'), 20, 1, {ease: FlxEase.linear}, function(value:Float) {
-                vignetteShader.setFloat('uStrength', value);
-              });
+              createVig(strength, reach, durSeconds, easeFunction);
         }
         // trace("Strength: " + strength + " | Reach: " + reach + " | Duration: " + duration + " | Easing: " + ease + " | Ease Function: " + easeFunction);
-
-        // vignetteShader.scriptCall("setStrength", [DEFAULT_STRENGTH]);
-        // vignetteShader.scriptCall("setReach", [DEFAULT_REACH]);
     }
 
     public function createVig(?strength:Float, ?reach:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
-      // cancelCurrentVigTween();
+      cancelCurrentVigTween();
       
       var startStrength = vignetteShader.getFloat('uStrength');
       var startReach = vignetteShader.getFloat('uReach');
     
       strength_tween = FlxTween.num(startStrength, strength, duration, {ease: ease}, function(value:Float) {
-        // vignetteShader.scriptCall("setStrength", [value]);
-        vignetteShader.setFloat('uStrength', value);
+        vignetteShader.scriptCall("setStrength", [value]);
       });
     
       reach_tween = FlxTween.num(startReach, reach, duration, {ease: ease}, function(value:Float) {
-        // vignetteShader.scriptCall("setReach", [value]);
-        vignetteShader.setFloat('uReach', value);
+        vignetteShader.scriptCall("setReach", [value]);
       });
     }
 
     public override function getTitle() {
-        return 'Vignette Effect\n(WIP IT DOES NOT WORK)';
+        return eventTitle;
     }
 
     public function cancelCurrentVigTween(){

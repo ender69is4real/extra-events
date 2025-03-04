@@ -34,3 +34,39 @@ I should also do camera flash event sticking with the white color and maybe a to
 
 10:58 AM 2/24/2025
 I think I'm okay with this one, current events are in and work fine
+
+11:10 PM 2/28/2025
+Just had a thought of maybe adding a "add text" event
+because I can see myself wanting to add a text as a subtitle text for songs with lyrical sections or just flavor text
+Actually wait I change my mind, I keep forgetting that this is a game
+meant for casual audiences to the point the opponent's strumline is intentionally off-center
+to make the player focus more on the notes
+
+I just remembered that Spooky Mix has something like this meant for lyrical songs
+Modders could maybe just use that
+
+12:53 AM 3/2/2025
+I change my mind, for convenience, I'll just add a "add subtitle event" that behaves pretty much the same as Spooky Mix's or like every subtitles event
+I'd need duration as steps, default tween for text to appear, default position that changes between scrolltypes, background color, font choice
+
+For font choice, I was thinking of taking a list of fonts from a json file instead of hardcoding the fonts in the code,
+this means that modders could use the default fonts (probably just vcr and maybe phantom-muff font) and add their own fonts with a json patch
+Text color is... too much trouble due to abstracts being unsupported and I don't know how to make "choices" options
+plus it's way more efficient to have a single color for the text and being able to use symbols around a specifc portion of a text to color it instead (like *this*) <- "this" will turn red while "like" is still white
+but that has the same problem
+
+I could maybe make toggles for italic and bold options though, that's the least I could do
+
+EDIT (10:20 PM 3/2/2025): This is scrapped due to Spooky Mix pretty much having all of these features lol, modders can maybe just use that
+
+3:57 PM 3/2/2025
+I just remembered something important too, I should make some sort of "add sound" event (hopefully base game has playOnce method for sounds to make this easier),
+I think I should also make a notekind that plays a keysound when hitting,
+kind of how charters in Quaver can place notes that play keysounds to make a rhythm (which I loved),
+but that goes against the title of this mod lol, ehh probably too much and not really neccesary if you're playing vocals the entire time
+and I don't think FNF charters care about this niche stuff (plus what I described is very rare in Quaver so I'll scrap it and go for an event instead)
+
+EDIT (10:28 PM 3/2/2025): Scrapped for the same reason lmao, Spooky Mix has an event that does exactly this (you can even place it behind the strumlines or in front) and thank god playOnce still exists
+
+10:31 PM 3/2/2025
+I think I'm okay with what I currently have although I'd like to take another jab at shaders again
