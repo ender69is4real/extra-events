@@ -70,3 +70,6 @@ EDIT (10:28 PM 3/2/2025): Scrapped for the same reason lmao, Spooky Mix has an e
 
 10:31 PM 3/2/2025
 I think I'm okay with what I currently have although I'd like to take another jab at shaders again
+
+12:28 AM 3/6/2025
+I didn't take another jab at shaders like I said in the previous entry, but I finally managed to make the events trigger whether the option is enabled or not (huge)

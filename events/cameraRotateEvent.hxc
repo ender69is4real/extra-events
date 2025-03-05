@@ -20,52 +20,48 @@ import funkin.modding.PolymodErrorHandler;
 import funkin.ui.options.OptionsState;
 import flixel.util.FlxSave;
 import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
+import funkin.play.event.ScriptedSongEvent;
 
-// class CameraRotateManager extends Module {
-//   function new() {
-//       super("cameraRotateManager", 1);
-//   }
-//   public var save:FlxSave;
+class CameraRotateManager extends ScriptedModule {
+  function new() {
+      super("cameraRotateManager");
+  }
+  public var save:FlxSave;
 
-//   override function onCreate(event) {
-//       super.onCreate(event);
-//       save = new FlxSave();
-//       save.bind("extra-screen-effects");
-//       save.data.isRotateEnabled = (save.data.isRotateEnabled != null) ? save.data.isRotateEnabled : false; // Default is false
-//       if (!save.data.isRotateEnabled || save.data.isRotateEnabled == null) {
-//         SongEventRegistry.resetEvents([SongEventRegistry.getEvent("cameraRotateEvent")]);
-//       }
+  override function onCreate(event) {
+    super.onCreate(event);
+    save = new FlxSave();
+    save.bind("extra-screen-effects");
+    save.data.isRotateEnabled = (save.data.isRotateEnabled != null) ? save.data.isRotateEnabled : true; // Default is true
 
-//       save.flush();
-//   }
+    save.flush();
+  }
 
-//   override function onStateChangeEnd(event) {
-//     super.onStateChangeEnd(event);
-//     if (Std.isOfType(event.targetState, OptionsState)) {
-//         var prefs = event.targetState.pages.get('preferences'); 
-//         if (prefs != null) {
-//             save = new FlxSave();
-//             save.bind("extra-screen-effects");
-//             prefs.createPrefItemCheckbox("Rotate Effect", "If unchecked, screen rotation effects will be disabled.", (value:Bool) -> {
-//                 save.data.isRotateEnabled = value;
-//                 save.flush();
-//                 SongEventRegistry.resetEvents([SongEventRegistry.getEvent("cameraRotateEvent")]);
-//             }, save.data.isRotateEnabled);
-//         }
-//     }
-// }
-// }
+override function onStateChangeEnd(event) {
+    super.onStateChangeEnd(event);
+    if (Std.isOfType(event.targetState, OptionsState)) {
+        var prefs = event.targetState.pages.get('preferences'); 
+        if (prefs != null) {
+            prefs.createPrefItemCheckbox("Rotate Screen Effect", "If unchecked, charts with rotational screen effects will be disabled.", (value:Bool) -> {
+                save.data.isRotateEnabled = value;
+                save.flush();
+            }, save.data.isRotateEnabled);
+        }
+    }
+}
+}
 
-class CameraRotateEvent extends SongEvent {
+class CameraRotateEvent extends ScriptedSongEvent {
     function new() {
         super("cameraRotateEvent");
     }
 
     public var eventTitle:String = "Camera Rotate";
-public var isEnabled:Module = ModuleHandler.getModule("").scriptGet("");
+    public var isEnabled:Bool; // Used to check if the option is enabled
 
-    // Probably best if we could change both without placing two events
+    // Probably best if we could change both without placing two separate events
     public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
     public var DEFAULT_CAMHUD_ANGLE:Float = 10.0;
     public var DEFAULT_DURATION:Float = 4.0;
@@ -77,6 +73,10 @@ public var isEnabled:Module = ModuleHandler.getModule("").scriptGet("");
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
+
+        var rotateManager = ModuleHandler.getModule("cameraRotateManager");
+        isEnabled = rotateManager.scriptGet("save").data.isRotateEnabled;
+        if (rotateManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
         var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
         var toAngle_camHUD:Float = data.getFloat('angleCamHUD') != null ? data.getFloat('angleCamHUD') : DEFAULT_CAMHUD_ANGLE;
@@ -191,9 +191,21 @@ public var isEnabled:Module = ModuleHandler.getModule("").scriptGet("");
                 'Smooth Step In' => 'smoothStepIn',
                 'Smooth Step Out' => 'smoothStepOut',
                 'Smooth Step In/Out' => 'smoothStepInOut',
+                'Smoother Step In' => 'smootherStepIn',
+                'Smoother Step Out' => 'smootherStepOut',
+                'Smoother Step In/Out' => 'smootherStepInOut',
                 'Elastic In' => 'elasticIn',
                 'Elastic Out' => 'elasticOut',
-                'Elastic In/Out' => 'elasticInOut'
+                'Elastic In/Out' => 'elasticInOut',
+                'Back In' => 'backIn',
+                'Back Out' => 'backOut',
+                'Back In/Out' => 'backInOut',
+                'Bounce In' => 'bounceIn',
+                'Bounce Out' => 'bounceOut',
+                'Bounce In/Out' => 'bounceInOut',
+                'Circ In' => 'circIn',
+                'Circ Out' => 'circOut',
+                'Circ In/Out' => 'circInOut'
               ]
             }
           ];

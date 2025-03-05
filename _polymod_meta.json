@@ -1,6 +1,6 @@
 {
   "title": "Extra Events",
-  "description": "Adds more events to experiment with in your charts!",
+  "description": "Adds more events to experiment with in your charts!\n\nEvents can be disabled/enabled in the options menu.",
   "api_version": "0.5.3",
   "mod_version": "1.0.0",
   "contributors": [
