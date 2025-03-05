@@ -26,7 +26,7 @@ import funkin.play.event.ScriptedSongEvent;
 
 class CameraRotateManager extends ScriptedModule {
   function new() {
-      super("cameraRotateManager");
+      super("extra-events-cameraRotateSaveManager");
   }
   public var save:FlxSave;
 
@@ -34,7 +34,7 @@ class CameraRotateManager extends ScriptedModule {
     super.onCreate(event);
     save = new FlxSave();
     save.bind("extra-screen-effects");
-    save.data.isRotateEnabled = (save.data.isRotateEnabled != null) ? save.data.isRotateEnabled : true; // Default is true
+    save.data.isOptionEnabled = (save.data.isOptionEnabled != null) ? save.data.isOptionEnabled : true; // Default is true
 
     save.flush();
   }
@@ -45,9 +45,9 @@ override function onStateChangeEnd(event) {
         var prefs = event.targetState.pages.get('preferences'); 
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Rotate Screen Effect", "If unchecked, charts with rotational screen effects will be disabled.", (value:Bool) -> {
-                save.data.isRotateEnabled = value;
+                save.data.isOptionEnabled = value;
                 save.flush();
-            }, save.data.isRotateEnabled);
+            }, save.data.isOptionEnabled);
         }
     }
 }
@@ -55,11 +55,11 @@ override function onStateChangeEnd(event) {
 
 class CameraRotateEvent extends ScriptedSongEvent {
     function new() {
-        super("cameraRotateEvent");
+        super("extra-events-cameraRotateEvent");
     }
 
     public var eventTitle:String = "Camera Rotate";
-    public var isEnabled:Bool; // Used to check if the option is enabled
+    public var isEnabled:Bool;
 
     // Probably best if we could change both without placing two separate events
     public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
@@ -74,8 +74,8 @@ class CameraRotateEvent extends ScriptedSongEvent {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
 
-        var rotateManager = ModuleHandler.getModule("cameraRotateManager");
-        isEnabled = rotateManager.scriptGet("save").data.isRotateEnabled;
+        var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateSaveManager");
+        isEnabled = rotateManager.scriptGet("save").data.isOptionEnabled;
         if (rotateManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
         var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
