@@ -7,13 +7,50 @@ import funkin.data.event.SongEventSchema;
 
 import funkin.modding.PolymodErrorHandler;
 // import flixel.util.FlxColor; // A dream wish for now
+import funkin.play.event.ScriptedSongEvent;
 
-class CameraFadeEvent extends SongEvent {
+import funkin.ui.options.OptionsState;
+import flixel.util.FlxSave;
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
+import funkin.data.event.SongEventRegistry;
+
+class CameraFadeManager extends ScriptedModule {
+  function new() {
+      super("extra-events-cameraFadeManager");
+  }
+  public var save:FlxSave;
+
+  override function onCreate(event) {
+    super.onCreate(event);
+    save = new FlxSave();
+    save.bind("extra-events-cameraFade");
+    save.data.isFadeEnabled = (save.data.isFadeEnabled != null) ? save.data.isFadeEnabled : true; // Default is true
+
+    save.flush();
+  }
+
+override function onStateChangeEnd(event) {
+    super.onStateChangeEnd(event);
+    if (Std.isOfType(event.targetState, OptionsState)) {
+        var prefs = event.targetState.pages.get('preferences'); 
+        if (prefs != null) {
+            prefs.createPrefItemCheckbox("Fade Screen Effects", "If unchecked, charts with placed fade screen effects/events will be disabled.", (value:Bool) -> {
+                save.data.isFadeEnabled = value;
+                save.flush();
+            }, save.data.isFadeEnabled);
+        }
+    }
+  }
+}
+
+class CameraFadeEvent extends ScriptedSongEvent {
     function new() {
-        super("cameraFadeEvent");
+        super("extra-events-cameraFadeEvent");
     }
 
-    public var eventTitle:String = "Camera Fade";
+    public var eventTitle:String = "Extra Events | Camera Fade";
+    public var isEnabled:Bool;
 
     public var DEFAULT_DURATION:Float = 4.0;
     public var DEFAULT_SHOULDFADEIN:Bool = true; // Used to whether to fade in or out
@@ -22,6 +59,11 @@ class CameraFadeEvent extends SongEvent {
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return; // used to know if we're in a song
         if (PlayState.instance.isMinimalMode) return;
+
+        // Save Stuff
+        var fadeManager = ModuleHandler.getModule("extra-events-cameraFadeManager");
+        isEnabled = fadeManager.scriptGet("save").data.isFadeEnabled;
+        if (fadeManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
         var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
         var shouldFadeIn:Bool = data.getBool('shouldFadeIn') != null ? data.getBool('shouldFadeIn') : DEFAULT_SHOULDFADEIN;
@@ -46,7 +88,7 @@ class CameraFadeEvent extends SongEvent {
     }
 
     public override function getIconPath(){
-      return 'ui/chart-editor/events/cameraFadeEvent';
+      return 'ui/chart-editor/events/extra-events-cameraFadeEvent';
     }
 
 

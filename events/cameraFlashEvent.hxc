@@ -7,24 +7,66 @@ import funkin.data.event.SongEventSchema;
 
 import funkin.modding.PolymodErrorHandler;
 // import flixel.util.FlxColor; // A dream wish for now
+import funkin.play.event.ScriptedSongEvent;
 
-class CameraFlashEvent extends SongEvent {
+import funkin.ui.options.OptionsState;
+import flixel.util.FlxSave;
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
+import funkin.data.event.SongEventRegistry;
+
+class CameraFlashManager extends ScriptedModule {
+  function new() {
+      super("extra-events-cameraFlashManager");
+  }
+  public var save:FlxSave;
+
+  override function onCreate(event) {
+    super.onCreate(event);
+    save = new FlxSave();
+    save.bind("extra-events-cameraFlash");
+    save.data.isFlashEnabled = (save.data.isFlashEnabled != null) ? save.data.isFlashEnabled : true; // Default is true
+
+    save.flush();
+  }
+
+override function onStateChangeEnd(event) {
+    super.onStateChangeEnd(event);
+    if (Std.isOfType(event.targetState, OptionsState)) {
+        var prefs = event.targetState.pages.get('preferences'); 
+        if (prefs != null) {
+            prefs.createPrefItemCheckbox("Flash Screen Effects", "If unchecked, charts with placed flash screen effects/events will be disabled.", (value:Bool) -> {
+                save.data.isFlashEnabled = value;
+                save.flush();
+            }, save.data.isFlashEnabled);
+        }
+    }
+  }
+}
+
+class CameraFlashEvent extends ScriptedSongEvent {
     function new() {
-        super("cameraFlashEvent");
+        super("extra-events-cameraFlashEvent");
     }
 
-    public var eventTitle:String = "Camera Flash";
+    public var eventTitle:String = "Extra Events | Camera Flash";
+    public var isEnabled:Bool;
     /*
     * white = 0xFFFFFFFF
     * red = 0xFFFF0000
     */
     public var DEFAULT_DURATION:Float = 1.0;
-    public var DEFAULT_APPLYTOHUD:Bool = false; // self-explanatory, default to false for players who want to read the notes
+    public var DEFAULT_APPLYTOHUD:Bool = false; // self-explanatory, default to false for players who just want to read the notes like me
     public var DEFAULT_ISRED:Bool = false; // It's somewhat common in mods
 
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
+
+        // Save Stuff
+        var flashManager = ModuleHandler.getModule("extra-events-cameraFlashManager");
+        isEnabled = flashManager.scriptGet("save").data.isFlashEnabled; // Only works if you relaunch the game and not with hotreloading
+        if (flashManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
         var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
         var applyToHud:Bool = data.getBool('applyToHud') != null ? data.getBool('applyToHud') : DEFAULT_APPLYTOHUD;

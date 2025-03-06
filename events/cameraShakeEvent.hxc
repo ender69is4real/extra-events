@@ -5,23 +5,66 @@ import flixel.FlxCamera;
 import funkin.modding.PolymodErrorHandler;
 
 import funkin.play.event.SongEvent;
+import funkin.play.event.ScriptedSongEvent;
 
-class CameraShakeEvent extends SongEvent {
+import funkin.ui.options.OptionsState;
+import flixel.util.FlxSave;
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
+import funkin.data.event.SongEventRegistry;
+
+class CameraShakeManager extends ScriptedModule {
+  function new() {
+      super("extra-events-cameraShakeManager");
+  }
+  public var save:FlxSave;
+
+  override function onCreate(event) {
+    super.onCreate(event);
+    save = new FlxSave();
+    save.bind("extra-events-cameraShake");
+    save.data.isShakeEnabled = (save.data.isShakeEnabled != null) ? save.data.isShakeEnabled : true; // Default is true
+
+    save.flush();
+  }
+
+override function onStateChangeEnd(event) {
+    super.onStateChangeEnd(event);
+    if (Std.isOfType(event.targetState, OptionsState)) {
+        var prefs = event.targetState.pages.get('preferences'); 
+        if (prefs != null) {
+            prefs.createPrefItemCheckbox("Shake Screen Effects", "If unchecked, charts with placed shake screen effects/events will be disabled.", (value:Bool) -> {
+                save.data.isShakeEnabled = value;
+                save.flush();
+            }, save.data.isShakeEnabled);
+        }
+    }
+  }
+}
+
+class CameraShakeEvent extends ScriptedSongEvent {
     function new() {
-        super("cameraShakeEvent");
+        super("extra-events-cameraShakeEvent");
     }
 
-    public var eventTitle:String = "Camera Shake";
-    // Probably best if we could change both without placing two events
+    public var eventTitle:String = "Extra Events | Camera Shake";
+    public var isEnabled:Bool;
+
+    // best if we could change both without placing two separate events
     public var DEFAULT_CAMGAME_INTENSITY:Float = 0.02;
     public var DEFAULT_CAMHUD_INTENSITY:Float = 0.01;
-    public var DEFAULT_DURATION:Float = 4.0;
+    public var DEFAULT_DURATION:Float = 1.0;
 
     // public var tween:FlxTween = null; // Can't figure out how to do easing on shaking effects
 
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
+
+        // Save Stuff
+        var shakeManager = ModuleHandler.getModule("extra-events-cameraShakeManager");
+        isEnabled = shakeManager.scriptGet("save").data.isShakeEnabled;
+        if (shakeManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
         var intensity_CamGame:Float = data.getFloat('intensityCamGame') != null ? data.getFloat('intensityCamGame') : DEFAULT_CAMGAME_INTENSITY;
         var intensity_CamHUD:Float = data.getFloat('intensityCamHUD') != null ? data.getFloat('intensityCamHUD') : DEFAULT_CAMHUD_INTENSITY;
@@ -42,7 +85,7 @@ class CameraShakeEvent extends SongEvent {
     }
 
     public override function getIconPath(){
-      return 'ui/chart-editor/events/cameraShakeEvent';
+      return 'ui/chart-editor/events/extra-events-cameraShakeEvent';
     }
 
     override function getEventSchema(){
@@ -66,7 +109,7 @@ class CameraShakeEvent extends SongEvent {
             {
               name: 'duration',
               title: 'Duration',
-              defaultValue: 4.0,
+              defaultValue: 1.0,
               step: 0.5,
               type: "float",
               units: 'steps'

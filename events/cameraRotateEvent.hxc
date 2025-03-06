@@ -1,15 +1,11 @@
 import funkin.play.PlayState;
 import funkin.Conductor;
-import funkin.modding.events.ScriptEvent;
 import funkin.modding.module.Module;
 import flixel.FlxG;
 import flixel.tweens.FlxTween;
-import flixel.util.FlxTimer;
 import flixel.tweens.FlxEase;
 import flixel.FlxCamera;
 import funkin.graphics.FunkinSprite;
-import funkin.Paths;
-import openfl.utils.Assets;
 import funkin.util.ReflectUtil;
 
 import funkin.play.event.SongEvent;
@@ -26,15 +22,15 @@ import funkin.play.event.ScriptedSongEvent;
 
 class CameraRotateManager extends ScriptedModule {
   function new() {
-      super("extra-events-cameraRotateSaveManager");
+      super("extra-events-cameraRotateManager");
   }
   public var save:FlxSave;
 
   override function onCreate(event) {
     super.onCreate(event);
     save = new FlxSave();
-    save.bind("extra-screen-effects");
-    save.data.isOptionEnabled = (save.data.isOptionEnabled != null) ? save.data.isOptionEnabled : true; // Default is true
+    save.bind("extra-events-cameraRotate");
+    save.data.isRotateEnabled = (save.data.isRotateEnabled != null) ? save.data.isRotateEnabled : true; // Default is true
 
     save.flush();
   }
@@ -44,13 +40,13 @@ override function onStateChangeEnd(event) {
     if (Std.isOfType(event.targetState, OptionsState)) {
         var prefs = event.targetState.pages.get('preferences'); 
         if (prefs != null) {
-            prefs.createPrefItemCheckbox("Rotate Screen Effect", "If unchecked, charts with rotational screen effects will be disabled.", (value:Bool) -> {
-                save.data.isOptionEnabled = value;
+            prefs.createPrefItemCheckbox("Rotate Screen Effect", "If unchecked, charts with placed rotational screen effects/events will be disabled.", (value:Bool) -> {
+                save.data.isRotateEnabled = value;
                 save.flush();
-            }, save.data.isOptionEnabled);
+            }, save.data.isRotateEnabled);
         }
     }
-}
+  }
 }
 
 class CameraRotateEvent extends ScriptedSongEvent {
@@ -58,10 +54,10 @@ class CameraRotateEvent extends ScriptedSongEvent {
         super("extra-events-cameraRotateEvent");
     }
 
-    public var eventTitle:String = "Camera Rotate";
+    public var eventTitle:String = "Extra Events | Camera Rotate";
     public var isEnabled:Bool;
 
-    // Probably best if we could change both without placing two separate events
+    // best if we could change both without placing two separate events
     public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
     public var DEFAULT_CAMHUD_ANGLE:Float = 10.0;
     public var DEFAULT_DURATION:Float = 4.0;
@@ -73,9 +69,13 @@ class CameraRotateEvent extends ScriptedSongEvent {
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
+        // if (PlayState.instance.needsReset == true) {
+        //   return;
+        // }
 
-        var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateSaveManager");
-        isEnabled = rotateManager.scriptGet("save").data.isOptionEnabled;
+        // Save Stuff
+        var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateManager");
+        isEnabled = rotateManager.scriptGet("save").data.isRotateEnabled;
         if (rotateManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
         var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
@@ -128,7 +128,7 @@ class CameraRotateEvent extends ScriptedSongEvent {
     }
 
     public override function getIconPath(){
-      return 'ui/chart-editor/events/cameraRotateEvent';
+      return 'ui/chart-editor/events/extra-events-cameraRotateEvent';
     }
 
     public override function getTitle() {
