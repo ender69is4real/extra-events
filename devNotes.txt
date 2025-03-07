@@ -1,7 +1,7 @@
 .LOG
 10:25 PM 1/11/2025
 There were moments where I wanted to add a specifc camera effect in my charts
-but couldn't so I made this
+but couldn't find it in base game's events, so I made this
 Plan: Have camera shaders such as vignete and bloom and chromatic scale and Film Grain and Lens (Not too sure about the last two)
 
 All of them has to support easing and the time should be steps instead of seconds
@@ -73,3 +73,6 @@ I think I'm okay with what I currently have although I'd like to take another ja
 
 12:28 AM 3/6/2025
 I didn't take another jab at shaders like I said in the previous entry, but I finally managed to make the events trigger whether the option is enabled or not (huge)
+
+12:11 PM 3/7/2025
+I got the ok from Spooky Mix's director to use/port his events in here (some things have be changed like duration being steps instead of seconds and options)
