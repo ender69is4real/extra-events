@@ -15,32 +15,24 @@ import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
 
-class CameraFadeManager extends ScriptedModule {
-  function new() {
-      super("extra-events-cameraFadeManager");
+class CameraFadeFixes extends ScriptedModule {
+
+  public function new(){
+      super('extra-events-cameraFadeFixes');
   }
-  public var save:FlxSave;
-
-  override function onCreate(event) {
-    super.onCreate(event);
-    save = new FlxSave();
-    save.bind("extra-events-cameraFade");
-    save.data.isFadeEnabled = (save.data.isFadeEnabled != null) ? save.data.isFadeEnabled : true; // Default is true
-
-    save.flush();
+  // There was a bug where if the player just happened to restart the song
+  // or died after the camera was faded, the camera fade effect wouldn't reset
+  // This is the band-aid solution for it until a way to reset events is found
+function onGameOver(event:ScriptEvent){
+    super.onGameOver(event);
+    if (PlayState.instance.camGame != null) PlayState.instance.camGame.stopFade();
+    if (PlayState.instance.camHUD != null) PlayState.instance.camHUD.stopFade();
   }
 
-override function onStateChangeEnd(event) {
-    super.onStateChangeEnd(event);
-    if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.pages.get('preferences'); 
-        if (prefs != null) {
-            prefs.createPrefItemCheckbox("Fade Screen Effects", "If unchecked, charts with placed fade screen effects/events will be disabled.", (value:Bool) -> {
-                save.data.isFadeEnabled = value;
-                save.flush();
-            }, save.data.isFadeEnabled);
-        }
-    }
+function onSongRetry(event:ScriptEvent){
+    super.onSongRetry(event);
+    if (PlayState.instance.camGame != null) PlayState.instance.camGame.stopFade();
+    if (PlayState.instance.camHUD != null) PlayState.instance.camHUD.stopFade();
   }
 }
 
@@ -50,24 +42,51 @@ class CameraFadeEvent extends ScriptedSongEvent {
     }
 
     public var eventTitle:String = "Extra Events | Camera Fade";
-    public var isEnabled:Bool;
 
     public var DEFAULT_DURATION:Float = 4.0;
     public var DEFAULT_SHOULDFADEIN:Bool = true; // Used to whether to fade in or out
     public var DEFAULT_APPLYTOHUD:Bool = false; // self-explanatory, default to false for players who want to read the notes
+    public var DEFAULT_COLOR:Int = 0; // Black
 
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return; // used to know if we're in a song
         if (PlayState.instance.isMinimalMode) return;
 
-        // Save Stuff
-        var fadeManager = ModuleHandler.getModule("extra-events-cameraFadeManager");
-        isEnabled = fadeManager.scriptGet("save").data.isFadeEnabled;
-        if (fadeManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
-
         var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
         var shouldFadeIn:Bool = data.getBool('shouldFadeIn') != null ? data.getBool('shouldFadeIn') : DEFAULT_SHOULDFADEIN;
         var applyToHud:Bool = data.getBool('applyToHud') != null ? data.getBool('applyToHud') : DEFAULT_APPLYTOHUD;
+        var color:Int = data.getInt('color') != null ? data.getInt('color') : DEFAULT_COLOR;
+        // I'm sure they'll have a color picker at some point
+        switch (color) {
+          case 0: // Black
+            color = 0xFF000000;
+          case 1: // Blue
+            color = 0xFF0000FF;
+          case 2: // Brown
+            color = 0xFFA52A2A;
+          case 3: // Cyan
+            color = 0xFF00FFFF;
+          case 4: // Gray
+            color = 0xFF808080;
+          case 5: // Green
+            color = 0xFF008000;
+          case 6: // Lime
+            color = 0xFF00FF00;
+          case 7: // Magenta
+            color = 0xFFFF00FF;
+          case 8: // Orange
+            color = 0xFFFFA500;
+          case 9: // Purple
+            color = 0xFF800080;
+          case 10: // Red
+            color = 0xFFFF0000;
+          case 11: // Transparent
+            color = 0x00000000;
+          case 12: // White
+            color = 0xFFFFFFFF;
+          case 13: // Yellow
+            color = 0xFFFFFF00;
+        }
 
         var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
 
@@ -76,9 +95,9 @@ class CameraFadeEvent extends ScriptedSongEvent {
         }
         
         if (!applyToHud) {
-          FlxG.camera.fade(0xFF000000, durSeconds, shouldFadeIn); // Fades camGame (black is the color)
+          FlxG.camera.fade(color, durSeconds, shouldFadeIn); // Fades camGame
         } else {
-          PlayState.instance.camHUD.fade(0xFF000000, durSeconds, shouldFadeIn); // camHUD
+          PlayState.instance.camHUD.fade(color, durSeconds, shouldFadeIn); // camHUD (no point in having "toggle both" option since camHUD is above everything)
         }
 
     }
@@ -96,6 +115,28 @@ class CameraFadeEvent extends ScriptedSongEvent {
         {
           return [
             {
+              name: 'color',
+              title: 'Color',
+              defaultValue: 0,
+              type: "enum",
+              keys: [
+                "Black" => 0,
+                "Blue" => 1,
+                "Brown" => 2,
+                "Cyan" => 3,
+                "Gray" => 4,
+                "Green" => 5,
+                "Lime" => 6,
+                "Magenta" => 7,
+                "Orange" => 8,
+                "Purple" => 9,
+                "Red" => 10,
+                "Transparent" => 11,
+                "White" => 12,
+                "Yellow" => 13
+              ]
+            },
+            {
               name: 'duration',
               title: 'Duration',
               defaultValue: 4.0,
@@ -111,7 +152,7 @@ class CameraFadeEvent extends ScriptedSongEvent {
             },
             {
               name: 'applyToHud',
-              title: 'Apply to camHUD?',
+              title: 'Apply to camHUD? (default is camGame)',
               defaultValue: false,
               type: "bool"
             }

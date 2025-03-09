@@ -1,0 +1,76 @@
+import funkin.play.PlayState;
+import funkin.Conductor;
+import flixel.FlxG;
+import flixel.FlxCamera;
+import funkin.modding.PolymodErrorHandler;
+
+import funkin.play.event.SongEvent;
+import funkin.play.event.ScriptedSongEvent;
+
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
+import funkin.data.event.SongEventRegistry;
+import funkin.audio.FunkinSound;
+import funkin.modding.events.ScriptEvent;
+
+class TrackVolumeEvent extends ScriptedSongEvent {
+    function new() {
+        super("extra-events-trackVolumeEvent");
+    }
+
+    public var eventTitle:String = "Extra Events | Set Track Volume";
+
+    override function handleEvent(data):Void {
+        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+        if (PlayState.instance.isMinimalMode) return;
+        var track = data.getInt('track');
+        var volume = data.getFloat('volume');
+        if (track == null) {
+            PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Track not found.");
+            return;
+        }
+
+        switch (track) {
+            // Bug: This event doesn't work on BF/player's vocals as the game is forcing the volume to 1 when hitting notes (I've tested Spooky Mix's and got the same result)
+            // case 0:
+            //     if (PlayState.instance.vocals != null) PlayState.instance.vocals.playerVolume = volume;
+            case 1:
+                if (PlayState.instance.vocals != null) PlayState.instance.vocals.opponentVolume = volume;
+            case 2:
+                if (FlxG.sound.music != null) FlxG.sound.music.volume = volume;
+            case 3:
+                // if (PlayState.instance.vocals != null) PlayState.instance.vocals.playerVolume = volume;
+                if (PlayState.instance.vocals != null) PlayState.instance.vocals.opponentVolume = volume;
+                if (FlxG.sound.music != null) FlxG.sound.music.volume = volume;
+        }
+    }
+
+    public override function getTitle() {
+        return eventTitle;
+    }
+
+    public override function getIconPath(){
+      return 'ui/chart-editor/events/extra-events-trackVolumeEvent';
+    }
+
+    override function getEventSchema(){
+        return [
+            {
+                name: "track",
+                title: "Track",
+                defaultValue: 0,
+                type: "enum",
+                keys: ["Opponent Voice" => 1, "Instrumental" => 2, "All Tracks" => 3]
+            },
+            {
+                name: 'volume',
+                title: 'Volume',
+                defaultValue: 1.0,
+                min: 0.0,
+                max: 1.0,
+                step: 0.1,
+                type: "float"
+            }
+        ];
+    }
+}

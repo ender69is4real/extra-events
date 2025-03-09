@@ -49,6 +49,27 @@ override function onStateChangeEnd(event) {
   }
 }
 
+class CameraRotateFixes extends ScriptedModule {
+
+    public function new(){
+        super('extra-events-cameraRotateFixes');
+    }
+    // There was a bug where if the player just happened to restart the song
+    // or died after the camera was rotated, the camera angle wouldn't reset
+    // This is the band-aid solution for it until a way to reset events is found
+  function onGameOver(event:ScriptEvent){
+		  super.onGameOver(event);
+      if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0) PlayState.instance.camGame.angle = 0;
+      if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0) PlayState.instance.camHUD.angle = 0; 
+	}
+
+  function onSongRetry(event:ScriptEvent){
+      super.onSongRetry(event);
+      if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0) PlayState.instance.camGame.angle = 0;
+      if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0) PlayState.instance.camHUD.angle = 0;
+  }
+}
+
 class CameraRotateEvent extends ScriptedSongEvent {
     function new() {
         super("extra-events-cameraRotateEvent");
@@ -69,9 +90,6 @@ class CameraRotateEvent extends ScriptedSongEvent {
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
-        // if (PlayState.instance.needsReset == true) {
-        //   return;
-        // }
 
         // Save Stuff
         var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateManager");

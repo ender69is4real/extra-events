@@ -25,6 +25,7 @@ class PlaySoundEvent extends ScriptedSongEvent {
         var audioName = data.getString('audioName');
         if (audioName == null || audioName == "") {
           PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Audio file not found in 'sounds' folder.\nDouble Check the file name and make sure it is in the sounds folder.");
+          return;
         }
 
         FunkinSound.playOnce(Paths.sound(audioName), data.getFloat('vol'));
