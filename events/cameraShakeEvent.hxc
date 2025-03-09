@@ -42,6 +42,25 @@ override function onStateChangeEnd(event) {
   }
 }
 
+class CameraShakeFixes extends ScriptedModule {
+
+  public function new(){
+      super('extra-events-cameraShakeFixes');
+  }
+  
+function onGameOver(event:ScriptEvent){
+    super.onGameOver(event);
+    if (PlayState.instance.camGame != null) PlayState.instance.camGame.stopShake();
+    if (PlayState.instance.camHUD != null) PlayState.instance.camHUD.stopShake();
+  }
+
+function onSongRetry(event:ScriptEvent){
+    super.onSongRetry(event);
+    if (PlayState.instance.camGame != null) PlayState.instance.camGame.stopShake();
+    if (PlayState.instance.camHUD != null) PlayState.instance.camHUD.stopShake();
+  }
+}
+
 class CameraShakeEvent extends ScriptedSongEvent {
     function new() {
         super("extra-events-cameraShakeEvent");
