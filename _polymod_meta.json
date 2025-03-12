@@ -5,8 +5,9 @@
   "mod_version": "1.0.0",
   "contributors": [
     {"name": "MAZ12211", "role": "Coded everything"},
-    {"name": "Psych Ward's base game channels", "role": "Major code help", "url": "https://discord.gg/psychengine"},
-    {"name": "Funkin's discussions page", "role": "Major code help", "url": "https://github.com/FunkinCrew/Funkin/discussions"}
+    {"name": "Psych Ward's base game channels", "role": "Major code help + feedback", "url": "https://discord.gg/psychengine"},
+    {"name": "Funkin's discussions page", "role": "Major code help", "url": "https://github.com/FunkinCrew/Funkin/discussions"},
+    {"name": "Denoohay", "role": "Permission to use Spooky Mix's event code in some shape or form\nand a few icons (I was exhausted to do them myself)", "url": "https://x.com/Denoohay"}
   ],
   "license": "MIT"
 }

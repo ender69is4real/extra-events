@@ -17,6 +17,7 @@ class TrackVolumeEvent extends ScriptedSongEvent {
     function new() {
         super("extra-events-trackVolumeEvent");
     }
+    // Some of the code is taken or based off of Spooky Mix's song volume action event by Denoohay
 
     public var eventTitle:String = "Extra Events | Set Track Volume";
 
