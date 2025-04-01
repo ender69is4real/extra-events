@@ -38,7 +38,7 @@ class AddLyricsManager extends ScriptedModule {
 override function onStateChangeEnd(event) {
     super.onStateChangeEnd(event);
     if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.pages.get('preferences');
+        var prefs = event.targetState.optionsCodex.pages.get('preferences');
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Show Lyrics", "If unchecked, charts with added lyrics will be disabled.", (value:Bool) -> {
                 save.data.isLyricsEnabled = value;

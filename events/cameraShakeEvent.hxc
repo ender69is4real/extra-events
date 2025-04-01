@@ -31,7 +31,7 @@ class CameraShakeManager extends ScriptedModule {
 override function onStateChangeEnd(event) {
     super.onStateChangeEnd(event);
     if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.pages.get('preferences'); 
+        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Shake Screen Effects", "If unchecked, charts with placed shake screen effects/events will be disabled.", (value:Bool) -> {
                 save.data.isShakeEnabled = value;

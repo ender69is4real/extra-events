@@ -38,7 +38,7 @@ class CameraRotateManager extends ScriptedModule {
 override function onStateChangeEnd(event) {
     super.onStateChangeEnd(event);
     if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.pages.get('preferences'); 
+        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Rotate Screen Effect", "If unchecked, charts with placed rotational screen effects/events will be disabled.", (value:Bool) -> {
                 save.data.isRotateEnabled = value;
