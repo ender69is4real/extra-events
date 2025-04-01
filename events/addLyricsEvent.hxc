@@ -38,7 +38,7 @@ class AddLyricsManager extends ScriptedModule {
 override function onStateChangeEnd(event) {
     super.onStateChangeEnd(event);
     if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.pages.get('preferences'); 
+        var prefs = event.targetState.pages.get('preferences');
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Show Lyrics", "If unchecked, charts with added lyrics will be disabled.", (value:Bool) -> {
                 save.data.isLyricsEnabled = value;
@@ -62,7 +62,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
     public static var lyricObj:FlxText;
     public static var currentTimer:FlxTimer;
 
-    public var DEFAULT_TEXT:String = "Teeeeeest test-test! ...test-test!";
+    public var DEFAULT_TEXT:String = "Hello!";
     public var DEFAULT_DURATION:Float = 4.0;
     public var DEFAULT_FONT:String = "vcr";
     public var DEFAULT_FONTSIZE:Float = 32.0;
@@ -72,7 +72,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
     public var DEFAULT_BOLD:Bool = false;
     public var DEFAULT_HAS_ANTIALIASING:Bool = false;
     
-    public var DEFAULT_ISCENTERED:Bool = false; // No point in having custom x and y position if it's going to be in camHUD. ISCENTERED is used for if you want the lyric to be the on the middle of the screen
+    public var DEFAULT_ISCENTERED:Bool = false; // No real point in having custom x and y position. ISCENTERED is used for if you want the lyric to be the on the middle of the screen
     public var DEFAULT_OPACITY:Float = 1.0;
     public var DEFAULT_LATTERSPACING:Float = 0.0;
     
@@ -201,12 +201,19 @@ class AddLyricsEvent extends ScriptedSongEvent {
         lyricObj.antialiasing = hasAntiAliasing;
         lyricObj.cameras = [PlayState.instance.camHUD];
         lyricObj.screenCenter(isCentered ? 0x11 : 0x01); // I love ternary operators
-        if (!isCentered) lyricObj.y = (Preferences.downscroll ? FlxG.height * 0.2 : FlxG.height * 0.7);
+        if (!isCentered) lyricObj.y = (Preferences.downscroll ? FlxG.height * 0.2 : FlxG.height * 0.7); // Dynamic positioning
+
+        if (PlayState.instance.opponentStrumline == null) return;
         for (strumLine in [PlayState.instance.playerStrumline, PlayState.instance.opponentStrumline]) {
           if (strumLine != null) {
-            PlayState.instance.insert((isBehindStrumLines ? 1 : 100000), lyricObj); // Pretty wonky way of handling the layering, but it works
+            PlayState.instance.insert(PlayState.instance.members.indexOf(strumLine) + (isBehindStrumLines ? 1 : -1), lyricObj); // The best way to handle layering hands down
           }
         }
+
+        if (lyricObj.font == null) {
+          trace("Font property is left empty.\nApplying found default font.");
+        }
+
         currentTimer = new FlxTimer().start(durSeconds, function(t:FlxTimer) {
           if (lyricObj != null) {
             lyricObj.kill();
@@ -233,7 +240,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
             {
               name: 'text',
               title: 'Text',
-              defaultValue: "test-test!",
+              defaultValue: "Hello!",
               type: "string"
             },
             {
@@ -283,7 +290,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
             },
             {
               name: "isBehindStrumLines",
-              title: "Put it behind Strumlines?",
+              title: "Put it behind Strumlines",
               defaultValue: true,
               type: "bool"
             },
@@ -307,7 +314,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
             },
             {
               name: "isCentered",
-              title: "Place in center?", /* Imagine if I could explain any of this, base game devs, please */
+              title: "Place in center", /* Imagine if I could explain any of this, base game devs, please, let me add tooltips for these things */
               defaultValue: false,
               type: "bool"
             },
@@ -355,7 +362,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
               title: 'Border Size',
               defaultValue: 1.25,
               step: 0.01,
-              min: 0, /*In case someone doesn't want a border*/
+              min: 0, /*In case someone doesn't want a border like me*/
               max: 10.0,
               type: "float"
             }

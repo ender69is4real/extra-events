@@ -81,3 +81,8 @@ I got the ok from Spooky Mix's director to use/port his events in here (some thi
 Alright, I can safely and proudly say, I've finished this mod.
 Still unfortunate I couldn't get the shader events to work, but I'll find a way to code it in eventually hopefully.
 Only thing that bothers me now is not having explanations for the events which I attempted to do by modifying user-guide but didn't work out.
+
+11:32 AM 3/31/2025
+Made a pr for the chart editor user guide instead of making a mod. I didn't have enough time to include 
+event explanations which is why I expanded the help guide in the first place but its purpose changed along the way.
+I really want to change the lyric and audio track and audio volume icons, I personally don't want two events have the same icon.

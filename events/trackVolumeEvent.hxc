@@ -65,7 +65,7 @@ class TrackVolumeEvent extends ScriptedSongEvent {
             },
             {
                 name: 'volume',
-                title: 'Volume',
+                title: 'Volume Level',
                 defaultValue: 1.0,
                 min: 0.0,
                 max: 1.0,

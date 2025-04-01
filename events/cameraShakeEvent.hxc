@@ -73,6 +73,7 @@ class CameraShakeEvent extends ScriptedSongEvent {
     public var DEFAULT_CAMGAME_INTENSITY:Float = 0.02;
     public var DEFAULT_CAMHUD_INTENSITY:Float = 0.01;
     public var DEFAULT_DURATION:Float = 1.0;
+    public var DEFAULT_DIRECTION:Int = 2;
 
     // public var tween:FlxTween = null; // Can't figure out how to do easing on shaking effects
 
@@ -88,15 +89,25 @@ class CameraShakeEvent extends ScriptedSongEvent {
         var intensity_CamGame:Float = data.getFloat('intensityCamGame') != null ? data.getFloat('intensityCamGame') : DEFAULT_CAMGAME_INTENSITY;
         var intensity_CamHUD:Float = data.getFloat('intensityCamHUD') != null ? data.getFloat('intensityCamHUD') : DEFAULT_CAMHUD_INTENSITY;
         var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+        var direction:Int = data.getInt('direction') != null ? data.getInt('direction') : DEFAULT_DIRECTION;
 
         var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+
+        switch (direction) {
+          case 0: // X
+            direction = 0x01;
+          case 1: // Y
+            direction = 0x10;
+          case 2: // Both
+            direction = 0x11;
+        }
 
         if (duration <= 0) {
           PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
         }
 
-        if (intensity_CamGame != 0) FlxG.camera.shake(intensity_CamGame, durSeconds);
-        if (intensity_CamHUD != 0) PlayState.instance.camHUD.shake(intensity_CamHUD, durSeconds);
+        if (intensity_CamGame != 0) FlxG.camera.shake(intensity_CamGame, durSeconds, direction);
+        if (intensity_CamHUD != 0) PlayState.instance.camHUD.shake(intensity_CamHUD, durSeconds, direction);
     }
 
     public override function getTitle() {
@@ -132,6 +143,17 @@ class CameraShakeEvent extends ScriptedSongEvent {
               step: 0.5,
               type: "float",
               units: 'steps'
+            },
+            {
+              name: 'direction',
+              title: 'Direction',
+              defaultValue: 2,
+              type: "enum",
+              keys: [
+                "Horizontal" => 0,
+                "Vertical" => 1,
+                "Both" => 2
+              ]
             }
           ];
         }

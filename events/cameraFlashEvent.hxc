@@ -122,13 +122,13 @@ class CameraFlashEvent extends ScriptedSongEvent {
             },
             {
               name: 'applyToHud',
-              title: 'Apply to camHUD?',
+              title: 'Apply to camHUD',
               defaultValue: false,
               type: "bool"
             },
             {
               name: 'isRed',
-              title: 'Apply red color?\n(default is white)',
+              title: 'Apply red color\n(default is white)',
               defaultValue: false,
               type: "bool"
             }

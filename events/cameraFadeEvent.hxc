@@ -146,13 +146,13 @@ class CameraFadeEvent extends ScriptedSongEvent {
             },
             {
               name: 'shouldFadeIn',
-              title: 'Fade in?',
+              title: 'Fade in',
               defaultValue: false,
               type: "bool"
             },
             {
               name: 'applyToHud',
-              title: 'Apply to camHUD? (default is camGame)',
+              title: 'Apply to camHUD\n(default is camGame)',
               defaultValue: false,
               type: "bool"
             }
