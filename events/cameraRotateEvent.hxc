@@ -40,7 +40,7 @@ override function onStateChangeEnd(event) {
     if (Std.isOfType(event.targetState, OptionsState)) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
-            prefs.createPrefItemCheckbox("Rotate Screen Effect", "If unchecked, charts with placed rotational screen effects/events will be disabled.", (value:Bool) -> {
+            prefs.createPrefItemCheckbox("Rotate Screen Effect", "If disabled, charts with placed rotational screen effects will be ignored.", (value:Bool) -> {
                 save.data.isRotateEnabled = value;
                 save.flush();
             }, save.data.isRotateEnabled);

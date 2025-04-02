@@ -33,7 +33,7 @@ override function onStateChangeEnd(event) {
     if (Std.isOfType(event.targetState, OptionsState)) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
-            prefs.createPrefItemCheckbox("Shake Screen Effects", "If unchecked, charts with placed shake screen effects/events will be disabled.", (value:Bool) -> {
+            prefs.createPrefItemCheckbox("Shake Screen Effects", "If disabled, charts with placed shake screen effects will be ignored.", (value:Bool) -> {
                 save.data.isShakeEnabled = value;
                 save.flush();
             }, save.data.isShakeEnabled);

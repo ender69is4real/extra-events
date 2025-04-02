@@ -35,7 +35,7 @@ override function onStateChangeEnd(event) {
     if (Std.isOfType(event.targetState, OptionsState)) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
-            prefs.createPrefItemCheckbox("Flash Screen Effects", "If unchecked, charts with placed flash screen effects/events will be disabled.", (value:Bool) -> {
+            prefs.createPrefItemCheckbox("Flash Screen Effects", "If disabled, charts with placed flash screen effects will be ignored.", (value:Bool) -> {
                 save.data.isFlashEnabled = value;
                 save.flush();
             }, save.data.isFlashEnabled);

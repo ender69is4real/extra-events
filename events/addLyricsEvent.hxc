@@ -40,7 +40,7 @@ override function onStateChangeEnd(event) {
     if (Std.isOfType(event.targetState, OptionsState)) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences');
         if (prefs != null) {
-            prefs.createPrefItemCheckbox("Show Lyrics", "If unchecked, charts with added lyrics will be disabled.", (value:Bool) -> {
+            prefs.createPrefItemCheckbox("Show Lyrics", "If disabled, charts with placed lyrics will be ignored.", (value:Bool) -> {
                 save.data.isLyricsEnabled = value;
                 save.flush();
             }, save.data.isLyricsEnabled);
@@ -85,7 +85,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
         if (PlayState.instance.isMinimalMode) return;
 
-        // Prevents stacking the text by deleting the current one
+        // Prevents stacking the current text by deleting the current one and reseting the timer
         if (lyricObj != null) {
           if (currentTimer != null) {
               currentTimer.cancel();
@@ -206,7 +206,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
         if (PlayState.instance.opponentStrumline == null) return;
         for (strumLine in [PlayState.instance.playerStrumline, PlayState.instance.opponentStrumline]) {
           if (strumLine != null) {
-            PlayState.instance.insert(PlayState.instance.members.indexOf(strumLine) + (isBehindStrumLines ? 1 : -1), lyricObj); // The best way to handle layering hands down
+            PlayState.instance.insert(PlayState.instance.members.indexOf(strumLine) + (!isBehindStrumLines ? 1 : -1), lyricObj); // The best way to handle layering hands down
           }
         }
 
