@@ -23,20 +23,25 @@ import funkin.play.event.SongEvent;
 import funkin.modding.base.ScriptedFlxRuntimeShader;
 import flixel.addons.display.FlxRuntimeShader;
 
-class shaderTest extends Module {
+class EEEEEshaderTest extends Module {
   var vignetteShader:FlxRuntimeShader;
   var vignetteFilter:ShaderFilter;
   public function new() {
-		super("shaderTest", 1);
+		super("EEEEEshaderTest", 1);
 	}
 
 	public override function onSongLoaded(e) {
     super.onSongLoaded(e);
-    // vignetteShader = ScriptedFlxRuntimeShader.init('VignetteEffect');
-    // vignetteShader.scriptCall("setStrength", [15.0]);
-    // vignetteShader.scriptCall("setReach", [1.0]);
-
+    // vignetteShader = ScriptedFlxRuntimeShader.init('VignEffect');
     // vignetteFilter = new ShaderFilter(vignetteShader);
 		// FlxG.camera.filters = [vignetteFilter];
+    // vignetteShader.scriptCall("setStrength", [0.0]);
+
+    // FlxTween.num(0.0, 5.0, 1, {ease: FlxEase.quadInOut}, function(value:Float) {
+    //   vignetteShader.scriptCall("setStrength", [value]);
+    // });
+    // FlxTween.num(0, 1.0, 1, {ease: FlxEase.quadInOut}, function(value:Float) {
+    //   vignetteShader.scriptCall("setReach", [value]);
+    // });
   }
 }

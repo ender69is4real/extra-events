@@ -15,6 +15,8 @@ import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
 
+// TODO: Color options just like the fade event without breaking compatibility (very few downloads though so I think I'm safe overwriting this code without making a new file and calling it V2)
+
 class CameraFlashManager extends ScriptedModule {
   function new() {
       super("extra-events-cameraFlashManager");
@@ -64,74 +66,75 @@ function onSongRetry(event:ScriptEvent){
 }
 
 class CameraFlashEvent extends ScriptedSongEvent {
-    function new() {
-        super("extra-events-cameraFlashEvent");
+  
+  function new() {
+      super("extra-events-cameraFlashEvent");
+  }
+
+  public var eventTitle:String = "Extra Events | Camera Flash";
+  public var isEnabled:Bool;
+  /*
+  * white = 0xFFFFFFFF
+  * red = 0xFFFF0000
+  */
+  public var DEFAULT_DURATION:Float = 1.0;
+  public var DEFAULT_APPLYTOHUD:Bool = false; // self-explanatory, default to false for players who just want to read the notes like me
+  public var DEFAULT_ISRED:Bool = false; // It's somewhat common in mods
+
+  override function handleEvent(data):Void {
+    if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+    if (PlayState.instance.isMinimalMode) return;
+
+    // Save Stuff
+    var flashManager = ModuleHandler.getModule("extra-events-cameraFlashManager");
+    isEnabled = flashManager.scriptGet("save").data.isFlashEnabled; // Only works if you relaunch the game and not with hotreloading
+    if (flashManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
+
+    var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+    var applyToHud:Bool = data.getBool('applyToHud') != null ? data.getBool('applyToHud') : DEFAULT_APPLYTOHUD;
+    var isRed:Bool = data.getBool('isRed') != null ? data.getBool('isRed') : DEFAULT_ISRED;
+
+    var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+
+    if (duration <= 0) {
+      PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
     }
 
-    public var eventTitle:String = "Extra Events | Camera Flash";
-    public var isEnabled:Bool;
-    /*
-    * white = 0xFFFFFFFF
-    * red = 0xFFFF0000
-    */
-    public var DEFAULT_DURATION:Float = 1.0;
-    public var DEFAULT_APPLYTOHUD:Bool = false; // self-explanatory, default to false for players who just want to read the notes like me
-    public var DEFAULT_ISRED:Bool = false; // It's somewhat common in mods
-
-    override function handleEvent(data):Void {
-        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
-        if (PlayState.instance.isMinimalMode) return;
-
-        // Save Stuff
-        var flashManager = ModuleHandler.getModule("extra-events-cameraFlashManager");
-        isEnabled = flashManager.scriptGet("save").data.isFlashEnabled; // Only works if you relaunch the game and not with hotreloading
-        if (flashManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
-
-        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
-        var applyToHud:Bool = data.getBool('applyToHud') != null ? data.getBool('applyToHud') : DEFAULT_APPLYTOHUD;
-        var isRed:Bool = data.getBool('isRed') != null ? data.getBool('isRed') : DEFAULT_ISRED;
-
-        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
-
-        if (duration <= 0) {
-          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-        }
-
-        if (!applyToHud) {
-          FlxG.camera.flash((isRed ? 0xFFFF0000 : 0xFFFFFFFF), durSeconds);
-        } else {
-          PlayState.instance.camHUD.flash((isRed ? 0xFFFF0000 : 0xFFFFFFFF), durSeconds);
-        }
-
+    if (!applyToHud) {
+      FlxG.camera.flash((isRed ? 0xFFFF0000 : 0xFFFFFFFF), durSeconds);
+    } else {
+      PlayState.instance.camHUD.flash((isRed ? 0xFFFF0000 : 0xFFFFFFFF), durSeconds);
     }
 
-    public override function getTitle() {
-        return eventTitle;
-    }
+  }
 
-    override function getEventSchema()
-        {
-          return [
-            {
-              name: 'duration',
-              title: 'Duration',
-              defaultValue: 1.0,
-              step: 1.0,
-              type: "float",
-              units: 'steps'
-            },
-            {
-              name: 'applyToHud',
-              title: 'Apply to camHUD',
-              defaultValue: false,
-              type: "bool"
-            },
-            {
-              name: 'isRed',
-              title: 'Apply red color\n(default is white)',
-              defaultValue: false,
-              type: "bool"
-            }
-          ];
-        }
+  public override function getTitle() {
+    return eventTitle;
+  }
+
+  override function getEventSchema(){
+    return [
+      {
+        name: 'duration',
+        title: 'Duration',
+        defaultValue: 1.0,
+        step: 1.0,
+        min: 0.5,
+        type: "float",
+        units: 'steps'
+      },
+      {
+        name: 'applyToHud',
+        title: 'Apply to camHUD',
+        defaultValue: false,
+        type: "bool"
+      },
+      {
+        name: 'isRed',
+        title: 'Apply red color\n(default is white)',
+        defaultValue: false,
+        type: "bool"
+      }
+    ];
+  }
 }

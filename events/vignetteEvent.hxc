@@ -1,3 +1,11 @@
+/*
+Messy af code below, it was midnight when I finished coding this event,
+so I was exhausted and didn't want this thing to stay shelved for too long
+Fortunately it fully works functionality wise, but codebase needs cleaning.
+
+Known bug: the tween is still active when the game is paused
+*/
+
 import funkin.play.PlayState;
 import funkin.modding.events.ScriptEvent;
 import funkin.modding.module.Module;
@@ -15,86 +23,192 @@ import flixel.FlxCamera;
 import funkin.util.ReflectUtil;
 import openfl.filters.ShaderFilter;
 import funkin.modding.base.ScriptedFlxRuntimeShader;
-// https://github.com/HaxeFlixel/flixel-addons/blob/671ad890e71628bfe43403241ede0d933513e6cf/flixel/addons/display/FlxRuntimeShader.hx
 import flixel.addons.display.FlxRuntimeShader;
 
 import funkin.play.event.SongEvent;
 
-class VignetteHandler extends SongEvent {
+import funkin.play.PlayState;
+import funkin.Conductor;
+import funkin.modding.events.ScriptEvent;
+import funkin.modding.module.Module;
+import funkin.ui.AtlasText;
+import flixel.FlxG;
+import flixel.tweens.FlxTween;
+import flixel.util.FlxTimer;
+import flixel.tweens.FlxEase;
+import flixel.FlxCamera;
+import funkin.graphics.FunkinSprite;
+import funkin.Paths;
+import openfl.utils.Assets;
+import funkin.play.PlayState;
+import funkin.Conductor;
+import flixel.tweens.FlxTween;
+import flixel.FlxCamera;
+import flixel.tweens.FlxEase;
+import funkin.util.ReflectUtil;
+
+import openfl.filters.ShaderFilter;
+import funkin.play.event.SongEvent;
+import funkin.modding.base.ScriptedFlxRuntimeShader;
+import flixel.addons.display.FlxRuntimeShader;
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.PolymodErrorHandler;
+
+import funkin.play.PlayState;
+import funkin.Conductor;
+import flixel.FlxG;
+
+import funkin.play.event.SongEvent;
+import funkin.data.event.SongEventSchema;
+
+import funkin.modding.PolymodErrorHandler;
+import funkin.play.event.ScriptedSongEvent;
+
+import funkin.ui.options.OptionsState;
+import flixel.util.FlxSave;
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
+import funkin.data.event.SongEventRegistry;
+
+class VignManager extends Module {
+  function new() {
+      super("extra-events-vignManager", 1);
+  }
+  public var save:FlxSave;
+
+  override function onCreate(event) {
+    super.onCreate(event);
+    save = new FlxSave();
+    save.bind("extra-events-vignEventSave"); // might fix the inconsistency later, maybe when modOptions is more advised/recommended in the documentation? (I don't know how to use them)
+    save.data.isVignEnabled = (save.data.isVignEnabled != null) ? save.data.isVignEnabled : true; // Default is true
+
+    save.flush();
+  }
+
+override function onStateChangeEnd(event) {
+    super.onStateChangeEnd(event);
+    if (Std.isOfType(event.targetState, OptionsState)) {
+        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
+        if (prefs != null) {
+            prefs.createPrefItemCheckbox("Vignette Effects", "If disabled, charts with placed vignette effects will be ignored.", (value:Bool) -> {
+                save.data.isVignEnabled = value;
+                save.flush();
+            }, save.data.isVignEnabled);
+        }
+    }
+  }
+}
+
+class VignHandler extends Module {
+  public var vignShader:FlxRuntimeShader;
+  public var vignFilter:ShaderFilter;
+
+  public var currentIntensity:Float = 0.0;
+  public var vignManager:Module;
+  public var isEnabled:Bool;
+
+  public function new() {
+		super("extra-events-vignHandler", 2);
+	}
+
+	override function onSongLoaded(e) {
+    super.onSongLoaded(e);
+
+    vignManager = ModuleHandler.getModule('extra-events-vignManager');
+    isEnabled = vignManager.scriptGet("save").data.isVignEnabled;
+
+
+    if (isEnabled) {
+      vignShader = ScriptedFlxRuntimeShader.init('VignEffect');
+      vignFilter = new ShaderFilter(vignShader);
+      vignShader.scriptCall("setIntensity", [currentIntensity]);
+      if (FlxG.camera.filters == null) FlxG.camera.filters = [vignFilter];
+      else FlxG.camera.filters.push(vignFilter);
+    }
+
+  }
+
+  override function onSongRetry(e) {
+    super.onSongRetry(e);
+
+    if (vignShader != null && isEnabled) {
+      if (FlxG.camera.filters != null) FlxG.camera.filters.remove(vignFilter);
+      vignShader = null;
+      currentIntensity = 0.0;
+    }
+  }
+  
+}
+
+class VignEvent extends SongEvent {
     function new() {
-        super("vignette");
+        super("extra-events-vignEvent");
     }
     
-    public var vignetteShader:FlxRuntimeShader;
-    public var vignetteFilter:ShaderFilter;
+    public var vignHandler:Module;
+    public var isEnabledd:Bool;
+    public var vignHandlerShader;
+    public var vignHandlerFilter;
 
-    public var eventTitle:String = "Vignette Effect\n(WIP IT DOES NOT WORK)";
+    public var eventTitle:String = "Vignette Effect";
 
-    public var DEFAULT_STRENGTH:Float = 15.0;
-    public var strength_tween:FlxTween = null;
-
-    public var DEFAULT_REACH:Float = 0.25;
-    public var reach_tween:FlxTween = null;
+    public var startIntensity:Float; // min = 1.0, max = 10
+    public var intensity_tween:FlxTween = null;
 
     public var DEFAULT_DURATION:Float = 4.0;
     public var DEFAULT_EASE:String = 'linear';
 
-    public override function handleEvent(data:SongEventData):Void {
-        // Does nothing if there is no PlayState camera or stage.
-        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
-        
-        // Does nothing if we are minimal mode.
-        if (PlayState.instance.isMinimalMode) return;
+    override function handleEvent(data:SongEventData):Void {
+      vignHandler = ModuleHandler.getModule('extra-events-vignHandler');
 
-        vignetteShader = ScriptedFlxRuntimeShader.init('VignetteEffect');
-    
-        vignetteFilter = new ShaderFilter(vignetteShader);
-        if (vignetteFilter != null) {
-          FlxG.camera.filters = [vignetteFilter];
-        }
+      if (PlayState.instance == null || PlayState.instance.isMinimalMode) return;
 
-        var strength:Float = data.getFloat('strength') != null ? vignetteShader.scriptCall("setStrength", [data.getFloat('strength')]) : vignetteShader.scriptCall("setStrength", [DEFAULT_STRENGTH]);
-        var reach:Float = data.getFloat('reach') != null ? vignetteShader.scriptCall("setReach", [data.getFloat('reach')]) : vignetteShader.scriptCall("setReach", [DEFAULT_REACH]);
-        
-        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
-        var ease:String = data.getString('ease') != null ? data.getString('ease') : DEFAULT_EASE;
-        
-        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
-        var easeFunction:Null<Float->Float>;
+      var vignManagerr = ModuleHandler.getModule('extra-events-vignManager');
+      isEnabledd = vignManagerr.scriptGet("save").data.isVignEnabled;
+      if (vignManagerr == null || !isEnabledd) return;
 
-        if (duration <= 0) {
-          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-        }
+      vignHandlerShader = vignHandler.scriptGet("vignShader");
+      vignHandlerFilter = vignHandler.scriptGet("vignFilter");
 
-        switch (ease) {
-            case 'INSTANT': // Cancel the tween here.
-              if (strength_tween != null) strength_tween.cancel();
-              if (reach_tween != null) reach_tween.cancel();
+      startIntensity = vignHandler.scriptGet("currentIntensity");
+
+      var intensity:Float = data.getFloat('intensity') != null ? data.getFloat('intensity') : startIntensity; 
+      
+      var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+      var ease:String = data.getString('ease') != null ? data.getString('ease') : DEFAULT_EASE;
+      
+      var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+      var easeFunction:Null<Float->Float>;
+
+      if (duration <= 0) {
+        PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+      }
+
+      switch (ease) {
+          case 'INSTANT': // Cancel the tween here.
+            if (intensity_tween != null) intensity_tween.cancel();
+            vignHandlerShader.scriptCall("setIntensity", [intensity]);
+            vignHandler.scriptSet("currentIntensity", intensity);
+            return;
+          default:
+            easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
+            if (easeFunction == null){
+              trace("Invalid easing function: " + ease);
               return;
-            default:
-              easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
-              if (easeFunction == null){
-                trace("Invalid easing function: " + ease);
-                return;
-              }
-              createVig(strength, reach, durSeconds, easeFunction);
-        }
-        // trace("Strength: " + strength + " | Reach: " + reach + " | Duration: " + duration + " | Easing: " + ease + " | Ease Function: " + easeFunction);
+            }
+            createVig(intensity, durSeconds, easeFunction);
+      }
+
     }
 
-    public function createVig(?strength:Float, ?reach:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+    public function createVig(?intensity:Float, ?duration:Float, ?ease:Null<Float->Float>) {
       cancelCurrentVigTween();
-      
-      var startStrength = vignetteShader.getFloat('uStrength');
-      var startReach = vignetteShader.getFloat('uReach');
     
-      strength_tween = FlxTween.num(startStrength, strength, duration, {ease: ease}, function(value:Float) {
-        vignetteShader.scriptCall("setStrength", [value]);
+      intensity_tween = FlxTween.num(vignHandler.scriptGet("currentIntensity"), intensity, duration, {ease: ease}, function(value:Float) {
+        vignHandlerShader.scriptCall("setIntensity", [value]);
+        vignHandler.scriptSet("currentIntensity", value);
       });
-    
-      reach_tween = FlxTween.num(startReach, reach, duration, {ease: ease}, function(value:Float) {
-        vignetteShader.scriptCall("setReach", [value]);
-      });
+
     }
 
     public override function getTitle() {
@@ -102,35 +216,28 @@ class VignetteHandler extends SongEvent {
     }
 
     public function cancelCurrentVigTween(){
-      if (vignetteFilter != null){
-        if (strength_tween != null) strength_tween.cancel();
-        if (reach_tween != null) reach_tween.cancel();
+      if (vignHandlerShader != null){
+        if (intensity_tween != null) intensity_tween.cancel();
       }
     }
 
     public override function getEventSchema(){
           return [
             {
-              name: 'strength',
-              title: 'Strength',
-              defaultValue: 15.0,
-              step: 0.1,
+              name: 'intensity',
+              title: 'Intensity',
+              defaultValue: 1.0,
+              step: 0.5,
+              max: 10.0,
               type: "float",
-              units: ''
-            },
-            {
-              name: 'reach',
-              title: 'Reach',
-              defaultValue: 0.25,
-              step: 0.01,
-              type: "float",
-              units: ''
+              units: 'value'
             },
             {
               name: 'duration',
               title: 'Duration',
               defaultValue: 4.0,
               step: 0.5,
+              min: 0.5,
               type: "float",
               units: 'steps'
             },
@@ -163,9 +270,21 @@ class VignetteHandler extends SongEvent {
                 'Smooth Step In' => 'smoothStepIn',
                 'Smooth Step Out' => 'smoothStepOut',
                 'Smooth Step In/Out' => 'smoothStepInOut',
+                'Smoother Step In' => 'smootherStepIn',
+                'Smoother Step Out' => 'smootherStepOut',
+                'Smoother Step In/Out' => 'smootherStepInOut',
                 'Elastic In' => 'elasticIn',
                 'Elastic Out' => 'elasticOut',
-                'Elastic In/Out' => 'elasticInOut'
+                'Elastic In/Out' => 'elasticInOut',
+                'Back In' => 'backIn',
+                'Back Out' => 'backOut',
+                'Back In/Out' => 'backInOut',
+                'Bounce In' => 'bounceIn',
+                'Bounce Out' => 'bounceOut',
+                'Bounce In/Out' => 'bounceInOut',
+                'Circ In' => 'circIn',
+                'Circ Out' => 'circOut',
+                'Circ In/Out' => 'circInOut'
               ]
             }
           ];

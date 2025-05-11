@@ -141,6 +141,7 @@ class CameraFadeEvent extends ScriptedSongEvent {
               title: 'Duration',
               defaultValue: 4.0,
               step: 1.0,
+              min: 0.5,
               type: "float",
               units: 'steps'
             },

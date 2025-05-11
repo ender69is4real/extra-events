@@ -83,7 +83,6 @@ class AddLyricsEvent extends ScriptedSongEvent {
 
     override function handleEvent(data):Void {
         if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
-        if (PlayState.instance.isMinimalMode) return;
 
         // Prevents stacking the current text by deleting the current one and reseting the timer
         if (lyricObj != null) {

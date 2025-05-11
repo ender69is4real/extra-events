@@ -1,10 +1,9 @@
 import openfl.filters.ShaderFilter;
 import flixel.addons.display.FlxRuntimeShader;
 
-class VignetteEffect extends FlxRuntimeShader
+class VignEffect extends FlxRuntimeShader
 {
-  public var uStrength:Float;
-  public var uReach:Float;
+  public var uIntensity:Float;
 
   public function new()
     {
@@ -12,18 +11,12 @@ class VignetteEffect extends FlxRuntimeShader
       super(fragText);
     }
 
-    function setStrength(value:Float):Void{
-      this.setFloat('uStrength', value);
-      return uStrength = value;
-    }
-
-    function setReach(value:Float):Void{
-      this.setFloat('uReach', value);
-      return uReach = value;
+    function setIntensity(value:Float):Void{
+      this.setFloat('u_intensity', value);
+      return uIntensity = value;
     }
 
     function update(elapsed:Float) {
-      setStrength(uStrength += elapsed);
-      setReach(uReach += elapsed);
+      setIntensity(uIntensity += elapsed);
     }
 }
