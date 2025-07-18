@@ -17,15 +17,15 @@ class CameraShakeManager extends ScriptedModule {
   function new() {
       super("extra-events-cameraShakeManager");
   }
-  public var save:FlxSave;
+  public var save:FlxSave = null;
 
   override function onCreate(event) {
     super.onCreate(event);
     save = new FlxSave();
     save.bind("extra-events-cameraShake");
-    save.data.isShakeEnabled = (save.data.isShakeEnabled != null) ? save.data.isShakeEnabled : true; // Default is true
+    save?.data.isShakeEnabled = (save?.data.isShakeEnabled != null) ? save?.data.isShakeEnabled : true; // Default is true
 
-    save.flush();
+    save?.flush();
   }
 
 override function onStateChangeEnd(event) {
@@ -34,131 +34,133 @@ override function onStateChangeEnd(event) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Shake Screen Effects", "If disabled, charts with placed shake screen effects will be ignored.", (value:Bool) -> {
-                save.data.isShakeEnabled = value;
-                save.flush();
-            }, save.data.isShakeEnabled);
+              save?.data.isShakeEnabled = value;
+              save?.flush();
+            }, save?.data.isShakeEnabled);
         }
     }
   }
 }
 
 class CameraShakeFixes extends ScriptedModule {
+  var shouldFixShakeEvent:Bool = true;
 
   public function new(){
-      super('extra-events-cameraShakeFixes');
+    super('extra-events-cameraShakeFixes');
   }
   
-function onGameOver(event:ScriptEvent){
+  function onGameOver(event:ScriptEvent){
     super.onGameOver(event);
-    if (PlayState.instance.camGame != null) PlayState.instance.camGame.stopShake();
-    if (PlayState.instance.camHUD != null) PlayState.instance.camHUD.stopShake();
+    if (PlayState.instance.camGame != null && shouldFixShakeEvent) PlayState.instance.camGame.stopShake();
+    if (PlayState.instance.camHUD != null && shouldFixShakeEvent) PlayState.instance.camHUD.stopShake();
   }
 
-function onSongRetry(event:ScriptEvent){
+  function onSongRetry(event:ScriptEvent){
     super.onSongRetry(event);
-    if (PlayState.instance.camGame != null) PlayState.instance.camGame.stopShake();
-    if (PlayState.instance.camHUD != null) PlayState.instance.camHUD.stopShake();
+    if (PlayState.instance.camGame != null && shouldFixShakeEvent) PlayState.instance.camGame.stopShake();
+    if (PlayState.instance.camHUD != null && shouldFixShakeEvent) PlayState.instance.camHUD.stopShake();
   }
 }
 
 class CameraShakeEvent extends ScriptedSongEvent {
-    function new() {
-        super("extra-events-cameraShakeEvent");
+  function new() {
+    super("extra-events-cameraShakeEvent");
+  }
+
+  public var eventTitle:String = "Extra Events | Camera Shake";
+  public var isEnabled:Bool;
+
+  // best if we could change both without placing two separate events
+  public var DEFAULT_CAMGAME_INTENSITY:Float = 0.02;
+  public var DEFAULT_CAMHUD_INTENSITY:Float = 0.01;
+  public var DEFAULT_DURATION:Float = 1.0;
+  public var DEFAULT_DIRECTION:Int = 2;
+
+  // public var tween:FlxTween = null; // Can't figure out how to do easing on shaking effects
+
+  override function handleEvent(data):Void {
+    if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+    if (PlayState.instance.isMinimalMode) return;
+
+    // Save Stuff
+    var shakeManager = ModuleHandler.getModule("extra-events-cameraShakeManager");
+    isEnabled = shakeManager?.scriptGet("save").data.isShakeEnabled;
+    if (shakeManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
+
+    var intensity_CamGame:Float = data.getFloat('intensityCamGame') != null ? data.getFloat('intensityCamGame') : DEFAULT_CAMGAME_INTENSITY;
+    var intensity_CamHUD:Float = data.getFloat('intensityCamHUD') != null ? data.getFloat('intensityCamHUD') : DEFAULT_CAMHUD_INTENSITY;
+    var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+    var direction:Int = data.getInt('direction') != null ? data.getInt('direction') : DEFAULT_DIRECTION;
+
+    var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+
+    switch (direction) {
+      case 0: // X
+        direction = 0x01;
+      case 1: // Y
+        direction = 0x10;
+      case 2: // Both
+        direction = 0x11;
     }
 
-    public var eventTitle:String = "Extra Events | Camera Shake";
-    public var isEnabled:Bool;
-
-    // best if we could change both without placing two separate events
-    public var DEFAULT_CAMGAME_INTENSITY:Float = 0.02;
-    public var DEFAULT_CAMHUD_INTENSITY:Float = 0.01;
-    public var DEFAULT_DURATION:Float = 1.0;
-    public var DEFAULT_DIRECTION:Int = 2;
-
-    // public var tween:FlxTween = null; // Can't figure out how to do easing on shaking effects
-
-    override function handleEvent(data):Void {
-        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
-        if (PlayState.instance.isMinimalMode) return;
-
-        // Save Stuff
-        var shakeManager = ModuleHandler.getModule("extra-events-cameraShakeManager");
-        isEnabled = shakeManager.scriptGet("save").data.isShakeEnabled;
-        if (shakeManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
-
-        var intensity_CamGame:Float = data.getFloat('intensityCamGame') != null ? data.getFloat('intensityCamGame') : DEFAULT_CAMGAME_INTENSITY;
-        var intensity_CamHUD:Float = data.getFloat('intensityCamHUD') != null ? data.getFloat('intensityCamHUD') : DEFAULT_CAMHUD_INTENSITY;
-        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
-        var direction:Int = data.getInt('direction') != null ? data.getInt('direction') : DEFAULT_DIRECTION;
-
-        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
-
-        switch (direction) {
-          case 0: // X
-            direction = 0x01;
-          case 1: // Y
-            direction = 0x10;
-          case 2: // Both
-            direction = 0x11;
-        }
-
-        if (duration <= 0) {
-          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-        }
-
-        if (intensity_CamGame != 0) FlxG.camera.shake(intensity_CamGame, durSeconds, direction);
-        if (intensity_CamHUD != 0) PlayState.instance.camHUD.shake(intensity_CamHUD, durSeconds, direction);
+    if (duration <= 0) {
+      PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+      return;
     }
 
-    public override function getTitle() {
-        return eventTitle;
-    }
+    if (intensity_CamGame != 0) FlxG.camera.shake(intensity_CamGame, durSeconds, direction);
+    if (intensity_CamHUD != 0) PlayState.instance.camHUD?.shake(intensity_CamHUD, durSeconds, direction);
+  }
 
-    public override function getIconPath(){
-      return 'ui/chart-editor/events/extra-events-cameraShakeEvent';
-    }
+  public override function getTitle() {
+    return eventTitle;
+  }
 
-    override function getEventSchema(){
-          return [
-            {
-              name: 'intensityCamGame',
-              title: 'CamGame Intensity',
-              defaultValue: 0.02,
-              step: 0.01,
-              min: 0,
-              type: "float",
-              units: 'x'
-            },
-            {
-              name: 'intensityCamHUD',
-              title: 'CamHUD Intensity',
-              defaultValue: 0.01,
-              step: 0.01,
-              min: 0,
-              type: "float",
-              units: 'x'
-            },
-            {
-              name: 'duration',
-              title: 'Duration',
-              defaultValue: 1.0,
-              step: 0.5,
-              min: 0.5,
-              type: "float",
-              units: 'steps'
-            },
-            {
-              name: 'direction',
-              title: 'Direction',
-              defaultValue: 2,
-              type: "enum",
-              keys: [
-                "Horizontal" => 0,
-                "Vertical" => 1,
-                "Both" => 2
-              ]
-            }
-          ];
-        }
-    }
+  public override function getIconPath(){
+    return 'ui/chart-editor/events/extra-events-cameraShakeEvent';
+  }
+
+  override function getEventSchema(){
+    return [
+      {
+        name: 'intensityCamGame',
+        title: 'CamGame Intensity',
+        defaultValue: 0.02,
+        step: 0.01,
+        min: 0,
+        type: "float",
+        units: 'x'
+      },
+      {
+        name: 'intensityCamHUD',
+        title: 'CamHUD Intensity',
+        defaultValue: 0.01,
+        step: 0.01,
+        min: 0,
+        type: "float",
+        units: 'x'
+      },
+      {
+        name: 'duration',
+        title: 'Duration',
+        defaultValue: 1.0,
+        step: 0.5,
+        min: 0.5,
+        type: "float",
+        units: 'steps'
+      },
+      {
+        name: 'direction',
+        title: 'Direction',
+        defaultValue: 2,
+        type: "enum",
+        keys: [
+          "Horizontal" => 0,
+          "Vertical" => 1,
+          "Both" => 2
+        ]
+      }
+    ];
+  }
+}
 

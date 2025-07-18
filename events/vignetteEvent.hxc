@@ -7,62 +7,31 @@ Known bug: the tween is still active when the game is paused
 */
 
 import funkin.play.PlayState;
-import funkin.modding.events.ScriptEvent;
-import funkin.modding.module.Module;
-import funkin.ui.AtlasText;
-import flixel.FlxG;
-import flixel.util.FlxTimer;
-import flixel.tweens.FlxEase;
-import funkin.graphics.FunkinSprite;
-import funkin.Paths;
-import openfl.utils.Assets;
-import funkin.play.PlayState;
-import funkin.Conductor;
-import flixel.tweens.FlxTween;
-import flixel.FlxCamera;
-import funkin.util.ReflectUtil;
-import openfl.filters.ShaderFilter;
-import funkin.modding.base.ScriptedFlxRuntimeShader;
-import flixel.addons.display.FlxRuntimeShader;
-
-import funkin.play.event.SongEvent;
-
-import funkin.play.PlayState;
 import funkin.Conductor;
 import funkin.modding.events.ScriptEvent;
 import funkin.modding.module.Module;
 import funkin.ui.AtlasText;
-import flixel.FlxG;
-import flixel.tweens.FlxTween;
 import flixel.util.FlxTimer;
-import flixel.tweens.FlxEase;
-import flixel.FlxCamera;
 import funkin.graphics.FunkinSprite;
 import funkin.Paths;
 import openfl.utils.Assets;
-import funkin.play.PlayState;
-import funkin.Conductor;
 import flixel.tweens.FlxTween;
 import flixel.FlxCamera;
 import flixel.tweens.FlxEase;
 import funkin.util.ReflectUtil;
 
 import openfl.filters.ShaderFilter;
-import funkin.play.event.SongEvent;
 import funkin.modding.base.ScriptedFlxRuntimeShader;
 import flixel.addons.display.FlxRuntimeShader;
-import funkin.modding.module.ModuleHandler;
-import funkin.modding.PolymodErrorHandler;
 
-import funkin.play.PlayState;
-import funkin.Conductor;
 import flixel.FlxG;
 
 import funkin.play.event.SongEvent;
+import funkin.play.event.ScriptedSongEvent;
+
 import funkin.data.event.SongEventSchema;
 
 import funkin.modding.PolymodErrorHandler;
-import funkin.play.event.ScriptedSongEvent;
 
 import funkin.ui.options.OptionsState;
 import flixel.util.FlxSave;
@@ -70,19 +39,19 @@ import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
 
-class VignManager extends Module {
+class VignManager extends ScriptedModule {
   function new() {
-      super("extra-events-vignManager", 1);
+    super("extra-events-vignManager", 1);
   }
-  public var save:FlxSave;
+  public var save:FlxSave = null;
 
   override function onCreate(event) {
     super.onCreate(event);
     save = new FlxSave();
-    save.bind("extra-events-vignEventSave"); // might fix the inconsistency later, maybe when modOptions is more advised/recommended in the documentation? (I don't know how to use them)
-    save.data.isVignEnabled = (save.data.isVignEnabled != null) ? save.data.isVignEnabled : true; // Default is true
+    save?.bind("extra-events-vignEventSave"); // might fix the inconsistency later, maybe when modOptions is more advised/recommended in the documentation? (I don't know how to use them)
+    save?.data.isVignEnabled = (save?.data.isVignEnabled != null) ? save?.data.isVignEnabled : true; // Default is true
 
-    save.flush();
+    save?.flush();
   }
 
 override function onStateChangeEnd(event) {
@@ -91,32 +60,31 @@ override function onStateChangeEnd(event) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Vignette Effects", "If disabled, charts with placed vignette effects will be ignored.", (value:Bool) -> {
-                save.data.isVignEnabled = value;
-                save.flush();
-            }, save.data.isVignEnabled);
+                save?.data.isVignEnabled = value;
+                save?.flush();
+            }, save?.data.isVignEnabled);
         }
     }
   }
 }
 
-class VignHandler extends Module {
+class VignHandler extends ScriptedModule {
   public var vignShader:FlxRuntimeShader;
   public var vignFilter:ShaderFilter;
 
   public var currentIntensity:Float = 0.0;
-  public var vignManager:Module;
+  public var vignManager:ScriptedModule = null;
   public var isEnabled:Bool;
 
   public function new() {
 		super("extra-events-vignHandler", 2);
 	}
 
-	override function onSongLoaded(e) {
-    super.onSongLoaded(e);
+	override function onSongStart(e) {
+    super.onSongStart(e);
 
     vignManager = ModuleHandler.getModule('extra-events-vignManager');
-    isEnabled = vignManager.scriptGet("save").data.isVignEnabled;
-
+    isEnabled = vignManager?.scriptGet("save").data.isVignEnabled; // Crash is caused by this
 
     if (isEnabled) {
       vignShader = ScriptedFlxRuntimeShader.init('VignEffect');
@@ -140,15 +108,19 @@ class VignHandler extends Module {
   
 }
 
-class VignEvent extends SongEvent {
+class VignEvent extends ScriptedSongEvent {
     function new() {
-        super("extra-events-vignEvent");
+      super("extra-events-vignEvent");
     }
     
-    public var vignHandler:Module;
+    /**
+    * Applies a vignette effect over camGame with easings
+    **/
+    
+    public var vignHandler:ScriptedModule = null;
     public var isEnabledd:Bool;
-    public var vignHandlerShader;
-    public var vignHandlerFilter;
+    public var vignHandler_Shader = null;
+    public var vignHandler_Filter = null;
 
     public var eventTitle:String = "Vignette Effect";
 
@@ -167,8 +139,8 @@ class VignEvent extends SongEvent {
       isEnabledd = vignManagerr.scriptGet("save").data.isVignEnabled;
       if (vignManagerr == null || !isEnabledd) return;
 
-      vignHandlerShader = vignHandler.scriptGet("vignShader");
-      vignHandlerFilter = vignHandler.scriptGet("vignFilter");
+      vignHandler_Shader = vignHandler.scriptGet("vignShader");
+      vignHandler_Filter = vignHandler.scriptGet("vignFilter");
 
       startIntensity = vignHandler.scriptGet("currentIntensity");
 
@@ -182,12 +154,13 @@ class VignEvent extends SongEvent {
 
       if (duration <= 0) {
         PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+        return;
       }
 
       switch (ease) {
           case 'INSTANT': // Cancel the tween here.
             if (intensity_tween != null) intensity_tween.cancel();
-            vignHandlerShader.scriptCall("setIntensity", [intensity]);
+            vignHandler_Shader.scriptCall("setIntensity", [intensity]);
             vignHandler.scriptSet("currentIntensity", intensity);
             return;
           default:
@@ -205,7 +178,7 @@ class VignEvent extends SongEvent {
       cancelCurrentVigTween();
     
       intensity_tween = FlxTween.num(vignHandler.scriptGet("currentIntensity"), intensity, duration, {ease: ease}, function(value:Float) {
-        vignHandlerShader.scriptCall("setIntensity", [value]);
+        vignHandler_Shader.scriptCall("setIntensity", [value]);
         vignHandler.scriptSet("currentIntensity", value);
       });
 
@@ -216,7 +189,7 @@ class VignEvent extends SongEvent {
     }
 
     public function cancelCurrentVigTween(){
-      if (vignHandlerShader != null){
+      if (vignHandler_Shader != null){
         if (intensity_tween != null) intensity_tween.cancel();
       }
     }
@@ -229,6 +202,7 @@ class VignEvent extends SongEvent {
               defaultValue: 1.0,
               step: 0.5,
               max: 10.0,
+              min: 0.0,
               type: "float",
               units: 'value'
             },

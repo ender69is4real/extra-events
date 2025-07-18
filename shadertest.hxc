@@ -1,25 +1,16 @@
 import funkin.play.PlayState;
 import funkin.Conductor;
-import funkin.modding.events.ScriptEvent;
 import funkin.modding.module.Module;
-import funkin.ui.AtlasText;
 import flixel.FlxG;
-import flixel.tweens.FlxTween;
 import flixel.util.FlxTimer;
-import flixel.tweens.FlxEase;
 import flixel.FlxCamera;
 import funkin.graphics.FunkinSprite;
 import funkin.Paths;
 import openfl.utils.Assets;
-import funkin.play.PlayState;
-import funkin.Conductor;
 import flixel.tweens.FlxTween;
-import flixel.FlxCamera;
 import flixel.tweens.FlxEase;
-import funkin.util.ReflectUtil;
 
 import openfl.filters.ShaderFilter;
-import funkin.play.event.SongEvent;
 import funkin.modding.base.ScriptedFlxRuntimeShader;
 import flixel.addons.display.FlxRuntimeShader;
 

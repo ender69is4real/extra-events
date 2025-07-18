@@ -22,211 +22,217 @@ import funkin.play.event.ScriptedSongEvent;
 
 class CameraRotateManager extends ScriptedModule {
   function new() {
-      super("extra-events-cameraRotateManager");
+    super("extra-events-cameraRotateManager");
   }
-  public var save:FlxSave;
+  public var save:FlxSave = null;
 
   override function onCreate(event) {
     super.onCreate(event);
     save = new FlxSave();
-    save.bind("extra-events-cameraRotate");
-    save.data.isRotateEnabled = (save.data.isRotateEnabled != null) ? save.data.isRotateEnabled : true; // Default is true
+    save?.bind("extra-events-cameraRotate");
+    save?.data.isRotateEnabled = (save?.data.isRotateEnabled != null) ? save?.data.isRotateEnabled : true; // Default is true
 
-    save.flush();
+    save?.flush();
   }
 
-override function onStateChangeEnd(event) {
+  override function onStateChangeEnd(event) {
     super.onStateChangeEnd(event);
     if (Std.isOfType(event.targetState, OptionsState)) {
         var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
         if (prefs != null) {
             prefs.createPrefItemCheckbox("Rotate Screen Effect", "If disabled, charts with placed rotational screen effects will be ignored.", (value:Bool) -> {
-                save.data.isRotateEnabled = value;
-                save.flush();
-            }, save.data.isRotateEnabled);
+                save?.data.isRotateEnabled = value;
+                save?.flush();
+            }, save?.data.isRotateEnabled);
         }
     }
   }
 }
 
 class CameraRotateFixes extends ScriptedModule {
+  var shouldFixRotateEvent:Bool = true;
 
-    public function new(){
-        super('extra-events-cameraRotateFixes');
-    }
-    // There was a bug where if the player just happened to restart the song
-    // or died after the camera was rotated, the camera angle wouldn't reset
-    // This is the band-aid solution for it until a way to reset events is found
+  public function new(){
+    super('extra-events-cameraRotateFixes');
+  }
+  // There was a bug where if the player just happened to restart the song
+  // or died after the camera was rotated, the camera angle wouldn't reset
+  // This is the band-aid solution for it until a way to reset events is found
+
+
   function onGameOver(event:ScriptEvent){
-		  super.onGameOver(event);
-      if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0) PlayState.instance.camGame.angle = 0;
-      if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0) PlayState.instance.camHUD.angle = 0; 
+    super.onGameOver(event);
+    if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0 && shouldFixRotateEvent) PlayState.instance.camGame.angle = 0;
+    if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0 && shouldFixRotateEvent) PlayState.instance.camHUD.angle = 0;
 	}
 
   function onSongRetry(event:ScriptEvent){
-      super.onSongRetry(event);
-      if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0) PlayState.instance.camGame.angle = 0;
-      if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0) PlayState.instance.camHUD.angle = 0;
+    super.onSongRetry(event);
+    if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0 && shouldFixRotateEvent) PlayState.instance.camGame.angle = 0;
+    if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0 && shouldFixRotateEvent) PlayState.instance.camHUD.angle = 0;
   }
 }
 
 class CameraRotateEvent extends ScriptedSongEvent {
-    function new() {
-        super("extra-events-cameraRotateEvent");
+  function new() {
+    super("extra-events-cameraRotateEvent");
+  }
+
+  /**
+  * Rotates the camera by a specified angle with easings
+  **/
+
+  public var eventTitle:String = "Extra Events | Camera Rotate";
+  public var isEnabled:Bool;
+
+  // best if we could change both without placing two separate events
+  public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
+  public var DEFAULT_CAMHUD_ANGLE:Float = 10.0;
+  public var DEFAULT_DURATION:Float = 4.0;
+  public var DEFAULT_EASE:String = 'linear';
+
+  public var camGameRotateTween:FlxTween = null;
+  public var camHUDRotateTween:FlxTween = null;
+
+  override function handleEvent(data):Void {
+    if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+    if (PlayState.instance.isMinimalMode) return;
+
+    // Save Stuff
+    var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateManager");
+    isEnabled = rotateManager?.scriptGet("save").data.isRotateEnabled;
+    if (rotateManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
+
+    var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
+    var toAngle_camHUD:Float = data.getFloat('angleCamHUD') != null ? data.getFloat('angleCamHUD') : DEFAULT_CAMHUD_ANGLE;
+    var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+    var ease:String = data.getString('ease') != null ? data.getString('ease') : DEFAULT_EASE;
+
+    var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+    var easeFunction:Null<Float->Float>;
+
+    if (duration < 0) {
+      PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
     }
 
-    public var eventTitle:String = "Extra Events | Camera Rotate";
-    public var isEnabled:Bool;
-
-    // best if we could change both without placing two separate events
-    public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
-    public var DEFAULT_CAMHUD_ANGLE:Float = 10.0;
-    public var DEFAULT_DURATION:Float = 4.0;
-    public var DEFAULT_EASE:String = 'linear';
-
-    public var camGameRotateTween:FlxTween = null;
-    public var camHUDRotateTween:FlxTween = null;
-
-    override function handleEvent(data):Void {
-        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
-        if (PlayState.instance.isMinimalMode) return;
-
-        // Save Stuff
-        var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateManager");
-        isEnabled = rotateManager.scriptGet("save").data.isRotateEnabled;
-        if (rotateManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
-
-        var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
-        var toAngle_camHUD:Float = data.getFloat('angleCamHUD') != null ? data.getFloat('angleCamHUD') : DEFAULT_CAMHUD_ANGLE;
-        var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
-        var ease:String = data.getString('ease') != null ? data.getString('ease') : DEFAULT_EASE;
-
-        var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
-        var easeFunction:Null<Float->Float>;
-
-        if (duration <= 0) {
-          PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-        }
-
-        switch (ease) {
-            case 'INSTANT':
-              if (camGameRotateTween != null) camGameRotateTween.cancel();
-              if (camHUDRotateTween != null) camHUDRotateTween.cancel();
-              PlayState.instance.camGame.angle = toAngle_camGame;
-              PlayState.instance.camHUD.angle = toAngle_camHUD;
-              return;
-            default:
-              easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
-              if (easeFunction == null){
-                  // trace("Invalid easing function: " + ease);
-                  return;
-                }
-              rotateCamGame(toAngle_camGame, durSeconds, easeFunction);
-              rotateCamHUD(toAngle_camHUD, durSeconds, easeFunction);
-        }
-        // trace("Angle: " + toAngle + " | Duration: " + duration + " | Easing: " + ease + " | Ease Function: " + easeFunction);
+    switch (ease) {
+        case 'INSTANT':
+          if (camGameRotateTween != null) camGameRotateTween.cancel();
+          if (camHUDRotateTween != null) camHUDRotateTween.cancel();
+          PlayState.instance.camGame.angle = toAngle_camGame;
+          PlayState.instance.camHUD.angle = toAngle_camHUD;
+          return;
+        default:
+          easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
+          if (easeFunction == null){
+            // trace("Invalid easing function: " + ease);
+            return;
+          }
+          rotateCamGame(toAngle_camGame, durSeconds, easeFunction);
+          rotateCamHUD(toAngle_camHUD, durSeconds, easeFunction);
     }
+    // trace("Angle: " + toAngle + " | Duration: " + duration + " | Easing: " + ease + " | Ease Function: " + easeFunction);
+  }
 
-    public function rotateCamGame(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
-      cancelCamGameRotation();
-      if (PlayState.instance.camGame != null) camGameRotateTween = FlxTween.tween(PlayState.instance.camGame, {angle: toAngle}, duration, {ease: ease});
-    }
+  public function rotateCamGame(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+    cancelCamGameRotation();
+    if (PlayState.instance.camGame != null && PlayState.instance != null) camGameRotateTween = FlxTween.tween(PlayState.instance.camGame, {angle: toAngle}, duration, {ease: ease});
+  }
 
-    public function rotateCamHUD(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
-      cancelCamHUDRotation();
-      if (PlayState.instance.camHUD != null) camHUDRotateTween = FlxTween.tween(PlayState.instance.camHUD, {angle: toAngle}, duration, {ease: ease});
-    }
+  public function rotateCamHUD(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+    cancelCamHUDRotation();
+    if (PlayState.instance.camHUD != null && PlayState.instance != null) camHUDRotateTween = FlxTween.tween(PlayState.instance.camHUD, {angle: toAngle}, duration, {ease: ease});
+  }
 
-    public function cancelCamGameRotation() {
-      if (camGameRotateTween != null) camGameRotateTween.cancel();
-    }
+  public function cancelCamGameRotation() {
+    if (camGameRotateTween != null) camGameRotateTween.cancel();
+  }
 
-    public function cancelCamHUDRotation() {
-      if (camHUDRotateTween != null) camHUDRotateTween.cancel();
-    }
+  public function cancelCamHUDRotation() {
+    if (camHUDRotateTween != null) camHUDRotateTween.cancel();
+  }
 
-    public override function getIconPath(){
-      return 'ui/chart-editor/events/extra-events-cameraRotateEvent';
-    }
+  public override function getIconPath(){
+    return 'ui/chart-editor/events/extra-events-cameraRotateEvent';
+  }
 
-    public override function getTitle() {
-        return eventTitle;
-    }
+  public override function getTitle() {
+    return eventTitle;
+  }
 
-    override function getEventSchema()
-        {
-          return [
-            {
-              name: 'angleCamGame',
-              title: 'CamGame Angle',
-              defaultValue: 10.0,
-              step: 0.5,
-              type: "float",
-              units: '°'
-            },
-            {
-              name: 'angleCamHUD',
-              title: 'CamHUD Angle',
-              defaultValue: 10.0,
-              step: 0.5,
-              type: "float",
-              units: '°'
-            },
-            {
-              name: 'duration',
-              title: 'Duration',
-              defaultValue: 4.0,
-              step: 0.5,
-              min: 0.5,
-              type: "float",
-              units: 'steps'
-            },
-            {
-              name: 'ease',
-              title: 'Easing Type',
-              defaultValue: 'linear',
-              type: "enum",
-              keys: [
-                'Linear' => 'linear',
-                'Instant (Ignores Duration)' => 'INSTANT',
-                'Sine In' => 'sineIn',
-                'Sine Out' => 'sineOut',
-                'Sine In/Out' => 'sineInOut',
-                'Quad In' => 'quadIn',
-                'Quad Out' => 'quadOut',
-                'Quad In/Out' => 'quadInOut',
-                'Cube In' => 'cubeIn',
-                'Cube Out' => 'cubeOut',
-                'Cube In/Out' => 'cubeInOut',
-                'Quart In' => 'quartIn',
-                'Quart Out' => 'quartOut',
-                'Quart In/Out' => 'quartInOut',
-                'Quint In' => 'quintIn',
-                'Quint Out' => 'quintOut',
-                'Quint In/Out' => 'quintInOut',
-                'Expo In' => 'expoIn',
-                'Expo Out' => 'expoOut',
-                'Expo In/Out' => 'expoInOut',
-                'Smooth Step In' => 'smoothStepIn',
-                'Smooth Step Out' => 'smoothStepOut',
-                'Smooth Step In/Out' => 'smoothStepInOut',
-                'Smoother Step In' => 'smootherStepIn',
-                'Smoother Step Out' => 'smootherStepOut',
-                'Smoother Step In/Out' => 'smootherStepInOut',
-                'Elastic In' => 'elasticIn',
-                'Elastic Out' => 'elasticOut',
-                'Elastic In/Out' => 'elasticInOut',
-                'Back In' => 'backIn',
-                'Back Out' => 'backOut',
-                'Back In/Out' => 'backInOut',
-                'Bounce In' => 'bounceIn',
-                'Bounce Out' => 'bounceOut',
-                'Bounce In/Out' => 'bounceInOut',
-                'Circ In' => 'circIn',
-                'Circ Out' => 'circOut',
-                'Circ In/Out' => 'circInOut'
-              ]
-            }
-          ];
-        }
+  override function getEventSchema() {
+    return [
+      {
+        name: 'angleCamGame',
+        title: 'CamGame Angle',
+        defaultValue: 10.0,
+        step: 0.5,
+        type: "float",
+        units: '°'
+      },
+      {
+        name: 'angleCamHUD',
+        title: 'CamHUD Angle',
+        defaultValue: 10.0,
+        step: 0.5,
+        type: "float",
+        units: '°'
+      },
+      {
+        name: 'duration',
+        title: 'Duration',
+        defaultValue: 4.0,
+        step: 0.5,
+        min: 0.5,
+        type: "float",
+        units: 'steps'
+      },
+      {
+        name: 'ease',
+        title: 'Easing Type',
+        defaultValue: 'linear',
+        type: "enum",
+        keys: [
+          'Linear' => 'linear',
+          'Instant (Ignores Duration)' => 'INSTANT',
+          'Sine In' => 'sineIn',
+          'Sine Out' => 'sineOut',
+          'Sine In/Out' => 'sineInOut',
+          'Quad In' => 'quadIn',
+          'Quad Out' => 'quadOut',
+          'Quad In/Out' => 'quadInOut',
+          'Cube In' => 'cubeIn',
+          'Cube Out' => 'cubeOut',
+          'Cube In/Out' => 'cubeInOut',
+          'Quart In' => 'quartIn',
+          'Quart Out' => 'quartOut',
+          'Quart In/Out' => 'quartInOut',
+          'Quint In' => 'quintIn',
+          'Quint Out' => 'quintOut',
+          'Quint In/Out' => 'quintInOut',
+          'Expo In' => 'expoIn',
+          'Expo Out' => 'expoOut',
+          'Expo In/Out' => 'expoInOut',
+          'Smooth Step In' => 'smoothStepIn',
+          'Smooth Step Out' => 'smoothStepOut',
+          'Smooth Step In/Out' => 'smoothStepInOut',
+          'Smoother Step In' => 'smootherStepIn',
+          'Smoother Step Out' => 'smootherStepOut',
+          'Smoother Step In/Out' => 'smootherStepInOut',
+          'Elastic In' => 'elasticIn',
+          'Elastic Out' => 'elasticOut',
+          'Elastic In/Out' => 'elasticInOut',
+          'Back In' => 'backIn',
+          'Back Out' => 'backOut',
+          'Back In/Out' => 'backInOut',
+          'Bounce In' => 'bounceIn',
+          'Bounce Out' => 'bounceOut',
+          'Bounce In/Out' => 'bounceInOut',
+          'Circ In' => 'circIn',
+          'Circ Out' => 'circOut',
+          'Circ In/Out' => 'circInOut'
+        ]
+      }
+    ];
+  }
 }

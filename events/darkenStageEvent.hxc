@@ -1,0 +1,128 @@
+import funkin.play.PlayState;
+import funkin.Conductor;
+import funkin.modding.module.Module;
+import flixel.FlxG;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+import flixel.FlxCamera;
+import funkin.graphics.FunkinSprite;
+import funkin.util.ReflectUtil;
+
+import funkin.play.event.SongEvent;
+import funkin.data.event.SongEventSchema;
+
+import funkin.modding.PolymodErrorHandler;
+
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.module.ScriptedModule;
+import funkin.data.event.SongEventRegistry;
+import funkin.play.event.ScriptedSongEvent;
+
+import funkin.play.stage.StageProp;
+import flixel.util.FlxTimer;
+
+class DarkenStagePropsFixes extends ScriptedModule {
+  var shouldFixDarkenEvent:Bool = true;
+
+  public function new(){
+    super('extra-events-darkenStagePropsFixes');
+  }
+
+  // function onGameOver(event:ScriptEvent){
+  //   super.onGameOver(event);
+  //   if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0 && shouldFixRotateEvent) PlayState.instance.camGame.angle = 0;
+  //   if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0 && shouldFixRotateEvent) PlayState.instance.camHUD.angle = 0;
+	// }
+
+  // function onSongRetry(event:ScriptEvent){
+  //   super.onSongRetry(event);
+  //   if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0 && shouldFixRotateEvent) PlayState.instance.camGame.angle = 0;
+  //   if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0 && shouldFixRotateEvent) PlayState.instance.camHUD.angle = 0;
+  // }
+}
+
+class DarkenStagePropsEvent extends ScriptedSongEvent {
+  function new() {
+    super("extra-events-darkenStagePropsEvent");
+  }
+
+  public var eventTitle:String = "HEAVY WIP | Extra Events | Darken Stage Props";
+
+  public var DEFAULT_DURATION:Float = 4.0;
+  public var DEFAULT_ALPHA:Float = 1.0;
+  public var colorTween:FlxTween = null;
+
+  override function handleEvent(data):Void {
+    if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+    if (PlayState.instance.isMinimalMode) return;
+
+    var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
+    var alpha:Float = data.getFloat('alpha') != null ? data.getFloat('alpha') : DEFAULT_ALPHA;
+
+    var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
+
+    if (duration < 0) {
+      PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less than 0.");
+    }
+    darkenStageProps(durSeconds);
+  }
+
+  function darkenStageProps(dur:Float):Void {
+    var durArg = dur;
+    cancelColorTween();
+    // Darken the background, then fade it back.
+    for (stageProp in PlayState.instance.currentStage.members) {
+      trace(stageProp.color);
+      // Determine if the stage prop is something that should be excluded from darkening.
+      if (Std.isOfType(stageProp, StageProp)) {
+        if (stageProp.name == "bf" || stageProp.name == "dad" || stageProp.name == "gf" /*This refers to the player.*/){
+          // Exclude.
+          continue;
+        }
+      }
+      
+      // // stageProp.color = 0xFF111111;
+      new FlxTimer().start(1/24, (tmr) ->
+      {
+        // stageProp.color = 0xFF222222;
+        colorTween = FlxTween.color(stageProp, durArg, stageProp.color, 0xff222222 /*Use fromRGB when V0.7.2 releases*/);
+      });
+
+    }
+  }
+
+  public function cancelColorTween() {
+    if (colorTween != null) colorTween.cancel();
+  }
+
+  public override function getIconPath(){
+    return 'ui/chart-editor/events/extra-events-darkenStageEvent';
+  }
+
+  public override function getTitle() {
+    return eventTitle;
+  }
+
+  override function getEventSchema() {
+    return [
+      {
+        name: 'duration',
+        title: 'Duration',
+        defaultValue: 4.0,
+        step: 0.5,
+        min: 0.5,
+        type: "float",
+        units: 'steps'
+      }
+      // {
+      //   name: 'alpha',
+      //   title: 'Alpha',
+      //   defaultValue: 1.0,
+      //   step: 0.1,
+      //   min: 0,
+      //   type: "float",
+      //   units: 'px'
+      // }
+    ];
+  }
+}
