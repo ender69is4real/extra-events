@@ -98,6 +98,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
     var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
     if (duration <= 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+      return;
     }
 
     // I'm sure they'll have a color picker at some point

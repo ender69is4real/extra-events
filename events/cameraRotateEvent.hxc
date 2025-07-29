@@ -88,6 +88,7 @@ class CameraRotateEvent extends ScriptedSongEvent {
 
     if (duration < 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
+      return;
     }
 
     switch (ease) {

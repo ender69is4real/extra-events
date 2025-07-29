@@ -64,6 +64,7 @@ class DarkenStagePropsEvent extends ScriptedSongEvent {
 
     if (duration < 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less than 0.");
+      return;
     }
     darkenStageProps(durSeconds, alpha);
   }
