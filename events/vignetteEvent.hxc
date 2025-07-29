@@ -38,35 +38,7 @@ import flixel.util.FlxSave;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
-
-class VignManager extends ScriptedModule {
-  function new() {
-    super("extra-events-vignManager", 1);
-  }
-  public var save:FlxSave = null;
-
-  override function onCreate(event) {
-    super.onCreate(event);
-    save = new FlxSave();
-    save?.bind("extra-events-vignEventSave"); // might fix the inconsistency later, maybe when modOptions is more advised/recommended in the documentation? (I don't know how to use them)
-    save?.data.isVignEnabled = (save?.data.isVignEnabled != null) ? save?.data.isVignEnabled : true; // Default is true
-
-    save?.flush();
-  }
-
-override function onStateChangeEnd(event) {
-    super.onStateChangeEnd(event);
-    if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
-        if (prefs != null) {
-            prefs.createPrefItemCheckbox("Vignette Effects", "If disabled, charts with placed vignette effects will be ignored.", (value:Bool) -> {
-                save?.data.isVignEnabled = value;
-                save?.flush();
-            }, save?.data.isVignEnabled);
-        }
-    }
-  }
-}
+import funkin.save.Save;
 
 class VignHandler extends ScriptedModule {
   public var vignShader:FlxRuntimeShader;
@@ -74,7 +46,7 @@ class VignHandler extends ScriptedModule {
 
   public var currentIntensity:Float = 0.0;
   public var vignManager:ScriptedModule = null;
-  public var isEnabled:Bool;
+  public var isEnabled = null;
 
   public function new() {
 		super("extra-events-vignHandler", 2);
@@ -82,9 +54,7 @@ class VignHandler extends ScriptedModule {
 
 	override function onSongStart(e) {
     super.onSongStart(e);
-
-    vignManager = ModuleHandler.getModule('extra-events-vignManager');
-    isEnabled = vignManager?.scriptGet("save").data.isVignEnabled; // Crash is caused by this
+    isEnabled = Save.instance.modOptions.get('extra-events').isVignEnabled; // Crash is caused by this
 
     if (isEnabled) {
       vignShader = ScriptedFlxRuntimeShader.init('VignEffect');
@@ -118,7 +88,6 @@ class VignEvent extends ScriptedSongEvent {
     **/
     
     public var vignHandler:ScriptedModule = null;
-    public var isEnabledd:Bool;
     public var vignHandler_Shader = null;
     public var vignHandler_Filter = null;
 
@@ -135,9 +104,7 @@ class VignEvent extends ScriptedSongEvent {
 
       if (PlayState.instance == null || PlayState.instance.isMinimalMode) return;
 
-      var vignManagerr = ModuleHandler.getModule('extra-events-vignManager');
-      isEnabledd = vignManagerr.scriptGet("save").data.isVignEnabled;
-      if (vignManagerr == null || !isEnabledd) return;
+      if (!Save.instance.modOptions.get('extra-events').isVignEnabled) return;
 
       vignHandler_Shader = vignHandler.scriptGet("vignShader");
       vignHandler_Filter = vignHandler.scriptGet("vignFilter");
@@ -154,7 +121,6 @@ class VignEvent extends ScriptedSongEvent {
 
       if (duration <= 0) {
         PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-        return;
       }
 
       switch (ease) {
@@ -162,12 +128,10 @@ class VignEvent extends ScriptedSongEvent {
             if (intensity_tween != null) intensity_tween.cancel();
             vignHandler_Shader.scriptCall("setIntensity", [intensity]);
             vignHandler.scriptSet("currentIntensity", intensity);
-            return;
           default:
             easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
             if (easeFunction == null){
               trace("Invalid easing function: " + ease);
-              return;
             }
             createVig(intensity, durSeconds, easeFunction);
       }
@@ -195,72 +159,72 @@ class VignEvent extends ScriptedSongEvent {
     }
 
     public override function getEventSchema(){
-          return [
-            {
-              name: 'intensity',
-              title: 'Intensity',
-              defaultValue: 1.0,
-              step: 0.5,
-              max: 10.0,
-              min: 0.0,
-              type: "float",
-              units: 'value'
-            },
-            {
-              name: 'duration',
-              title: 'Duration',
-              defaultValue: 4.0,
-              step: 0.5,
-              min: 0.5,
-              type: "float",
-              units: 'steps'
-            },
-            {
-              name: 'ease',
-              title: 'Easing Type',
-              defaultValue: 'linear',
-              type: "enum",
-              keys: [
-                'Linear' => 'linear',
-                'Instant (Ignores Duration)' => 'INSTANT',
-                'Sine In' => 'sineIn',
-                'Sine Out' => 'sineOut',
-                'Sine In/Out' => 'sineInOut',
-                'Quad In' => 'quadIn',
-                'Quad Out' => 'quadOut',
-                'Quad In/Out' => 'quadInOut',
-                'Cube In' => 'cubeIn',
-                'Cube Out' => 'cubeOut',
-                'Cube In/Out' => 'cubeInOut',
-                'Quart In' => 'quartIn',
-                'Quart Out' => 'quartOut',
-                'Quart In/Out' => 'quartInOut',
-                'Quint In' => 'quintIn',
-                'Quint Out' => 'quintOut',
-                'Quint In/Out' => 'quintInOut',
-                'Expo In' => 'expoIn',
-                'Expo Out' => 'expoOut',
-                'Expo In/Out' => 'expoInOut',
-                'Smooth Step In' => 'smoothStepIn',
-                'Smooth Step Out' => 'smoothStepOut',
-                'Smooth Step In/Out' => 'smoothStepInOut',
-                'Smoother Step In' => 'smootherStepIn',
-                'Smoother Step Out' => 'smootherStepOut',
-                'Smoother Step In/Out' => 'smootherStepInOut',
-                'Elastic In' => 'elasticIn',
-                'Elastic Out' => 'elasticOut',
-                'Elastic In/Out' => 'elasticInOut',
-                'Back In' => 'backIn',
-                'Back Out' => 'backOut',
-                'Back In/Out' => 'backInOut',
-                'Bounce In' => 'bounceIn',
-                'Bounce Out' => 'bounceOut',
-                'Bounce In/Out' => 'bounceInOut',
-                'Circ In' => 'circIn',
-                'Circ Out' => 'circOut',
-                'Circ In/Out' => 'circInOut'
-              ]
-            }
-          ];
+      return [
+        {
+          name: 'intensity',
+          title: 'Intensity',
+          defaultValue: 1.0,
+          step: 0.5,
+          max: 10.0,
+          min: 0.0,
+          type: "float",
+          units: 'value'
+        },
+        {
+          name: 'duration',
+          title: 'Duration',
+          defaultValue: 4.0,
+          step: 0.5,
+          min: 0.5,
+          type: "float",
+          units: 'steps'
+        },
+        {
+          name: 'ease',
+          title: 'Easing Type',
+          defaultValue: 'linear',
+          type: "enum",
+          keys: [
+            'Linear' => 'linear',
+            'Instant (Ignores Duration)' => 'INSTANT',
+            'Sine In' => 'sineIn',
+            'Sine Out' => 'sineOut',
+            'Sine In/Out' => 'sineInOut',
+            'Quad In' => 'quadIn',
+            'Quad Out' => 'quadOut',
+            'Quad In/Out' => 'quadInOut',
+            'Cube In' => 'cubeIn',
+            'Cube Out' => 'cubeOut',
+            'Cube In/Out' => 'cubeInOut',
+            'Quart In' => 'quartIn',
+            'Quart Out' => 'quartOut',
+            'Quart In/Out' => 'quartInOut',
+            'Quint In' => 'quintIn',
+            'Quint Out' => 'quintOut',
+            'Quint In/Out' => 'quintInOut',
+            'Expo In' => 'expoIn',
+            'Expo Out' => 'expoOut',
+            'Expo In/Out' => 'expoInOut',
+            'Smooth Step In' => 'smoothStepIn',
+            'Smooth Step Out' => 'smoothStepOut',
+            'Smooth Step In/Out' => 'smoothStepInOut',
+            'Smoother Step In' => 'smootherStepIn',
+            'Smoother Step Out' => 'smootherStepOut',
+            'Smoother Step In/Out' => 'smootherStepInOut',
+            'Elastic In' => 'elasticIn',
+            'Elastic Out' => 'elasticOut',
+            'Elastic In/Out' => 'elasticInOut',
+            'Back In' => 'backIn',
+            'Back Out' => 'backOut',
+            'Back In/Out' => 'backInOut',
+            'Bounce In' => 'bounceIn',
+            'Bounce Out' => 'bounceOut',
+            'Bounce In/Out' => 'bounceInOut',
+            'Circ In' => 'circIn',
+            'Circ Out' => 'circOut',
+            'Circ In/Out' => 'circInOut'
+          ]
         }
+      ];
+    }
 }

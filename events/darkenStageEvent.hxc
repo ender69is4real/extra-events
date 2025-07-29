@@ -20,6 +20,7 @@ import funkin.play.event.ScriptedSongEvent;
 
 import funkin.play.stage.StageProp;
 import flixel.util.FlxTimer;
+import flixel.util.FlxColor;
 
 class DarkenStagePropsFixes extends ScriptedModule {
   var shouldFixDarkenEvent:Bool = true;
@@ -49,7 +50,7 @@ class DarkenStagePropsEvent extends ScriptedSongEvent {
   public var eventTitle:String = "HEAVY WIP | Extra Events | Darken Stage Props";
 
   public var DEFAULT_DURATION:Float = 4.0;
-  public var DEFAULT_ALPHA:Float = 1.0;
+  public var DEFAULT_ALPHA:Float = 0.5;
   public var colorTween:FlxTween = null;
 
   override function handleEvent(data):Void {
@@ -64,15 +65,15 @@ class DarkenStagePropsEvent extends ScriptedSongEvent {
     if (duration < 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less than 0.");
     }
-    darkenStageProps(durSeconds);
+    darkenStageProps(durSeconds, alpha);
   }
 
-  function darkenStageProps(dur:Float):Void {
+  function darkenStageProps(?dur:Float, ?alpha:Float):Void {
     var durArg = dur;
+    var alphaArg = alpha;
     cancelColorTween();
     // Darken the background, then fade it back.
     for (stageProp in PlayState.instance.currentStage.members) {
-      trace(stageProp.color);
       // Determine if the stage prop is something that should be excluded from darkening.
       if (Std.isOfType(stageProp, StageProp)) {
         if (stageProp.name == "bf" || stageProp.name == "dad" || stageProp.name == "gf" /*This refers to the player.*/){
@@ -84,8 +85,8 @@ class DarkenStagePropsEvent extends ScriptedSongEvent {
       // // stageProp.color = 0xFF111111;
       new FlxTimer().start(1/24, (tmr) ->
       {
-        // stageProp.color = 0xFF222222;
-        colorTween = FlxTween.color(stageProp, durArg, stageProp.color, 0xff222222 /*Use fromRGB when V0.7.2 releases*/);
+        // colorTween = FlxTween.color(stageProp, durArg, stageProp.color, FlxColor.fromRGBFloat(1.0, 0.14, 0.14, alphaArg));
+        colorTween = FlxTween.color(stageProp, durArg, stageProp.color, FlxColor.fromRGBFloat(0, 0, 0, alphaArg));
       });
 
     }
@@ -113,16 +114,16 @@ class DarkenStagePropsEvent extends ScriptedSongEvent {
         min: 0.5,
         type: "float",
         units: 'steps'
+      },
+      {
+        name: 'alpha',
+        title: 'Alpha',
+        defaultValue: 0.5,
+        step: 0.1,
+        min: 0,
+        max: 1,
+        type: "float",
       }
-      // {
-      //   name: 'alpha',
-      //   title: 'Alpha',
-      //   defaultValue: 1.0,
-      //   step: 0.1,
-      //   min: 0,
-      //   type: "float",
-      //   units: 'px'
-      // }
     ];
   }
 }

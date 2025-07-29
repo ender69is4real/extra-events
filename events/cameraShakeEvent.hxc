@@ -8,39 +8,10 @@ import funkin.play.event.SongEvent;
 import funkin.play.event.ScriptedSongEvent;
 
 import funkin.ui.options.OptionsState;
-import flixel.util.FlxSave;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
-
-class CameraShakeManager extends ScriptedModule {
-  function new() {
-      super("extra-events-cameraShakeManager");
-  }
-  public var save:FlxSave = null;
-
-  override function onCreate(event) {
-    super.onCreate(event);
-    save = new FlxSave();
-    save.bind("extra-events-cameraShake");
-    save?.data.isShakeEnabled = (save?.data.isShakeEnabled != null) ? save?.data.isShakeEnabled : true; // Default is true
-
-    save?.flush();
-  }
-
-override function onStateChangeEnd(event) {
-    super.onStateChangeEnd(event);
-    if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
-        if (prefs != null) {
-            prefs.createPrefItemCheckbox("Shake Screen Effects", "If disabled, charts with placed shake screen effects will be ignored.", (value:Bool) -> {
-              save?.data.isShakeEnabled = value;
-              save?.flush();
-            }, save?.data.isShakeEnabled);
-        }
-    }
-  }
-}
+import funkin.save.Save;
 
 class CameraShakeFixes extends ScriptedModule {
   var shouldFixShakeEvent:Bool = true;
@@ -68,7 +39,7 @@ class CameraShakeEvent extends ScriptedSongEvent {
   }
 
   public var eventTitle:String = "Extra Events | Camera Shake";
-  public var isEnabled:Bool;
+  public var isEnabled = null;
 
   // best if we could change both without placing two separate events
   public var DEFAULT_CAMGAME_INTENSITY:Float = 0.02;
@@ -83,9 +54,8 @@ class CameraShakeEvent extends ScriptedSongEvent {
     if (PlayState.instance.isMinimalMode) return;
 
     // Save Stuff
-    var shakeManager = ModuleHandler.getModule("extra-events-cameraShakeManager");
-    isEnabled = shakeManager?.scriptGet("save").data.isShakeEnabled;
-    if (shakeManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
+    isEnabled = Save.instance.modOptions.get('extra-events').isShakeEnabled;
+    if (!isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
     var intensity_CamGame:Float = data.getFloat('intensityCamGame') != null ? data.getFloat('intensityCamGame') : DEFAULT_CAMGAME_INTENSITY;
     var intensity_CamHUD:Float = data.getFloat('intensityCamHUD') != null ? data.getFloat('intensityCamHUD') : DEFAULT_CAMHUD_INTENSITY;
@@ -101,11 +71,13 @@ class CameraShakeEvent extends ScriptedSongEvent {
         direction = 0x10;
       case 2: // Both
         direction = 0x11;
+
+      default:
+        direction = 0x11;
     }
 
     if (duration <= 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-      return;
     }
 
     if (intensity_CamGame != 0) FlxG.camera.shake(intensity_CamGame, durSeconds, direction);

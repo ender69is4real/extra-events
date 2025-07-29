@@ -14,51 +14,22 @@ import flixel.util.FlxSave;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
-
-class CameraFlashManager extends ScriptedModule {
-  function new() {
-      super("extra-events-cameraFlashManager");
-  }
-  public var save:FlxSave = null;
-
-  override function onCreate(event) {
-    super.onCreate(event);
-    save = new FlxSave();
-    save?.bind("extra-events-cameraFlash");
-    save?.data.isFlashEnabled = (save?.data.isFlashEnabled != null) ? save?.data.isFlashEnabled : true; // Default is true
-
-    save?.flush();
-  }
-
-override function onStateChangeEnd(event) {
-    super.onStateChangeEnd(event);
-    if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
-        if (prefs != null) {
-            prefs.createPrefItemCheckbox("Flash Screen Effects", "If disabled, charts with placed flash screen effects will be ignored.", (value:Bool) -> {
-                save?.data.isFlashEnabled = value;
-                save?.flush();
-            }, save?.data.isFlashEnabled);
-        }
-    }
-  }
-}
+import funkin.save.Save;
 
 class CameraFlashFixes extends ScriptedModule {
-
   var shouldFixFlashEvent:Bool = true;
 
   public function new(){
     super('extra-events-cameraFlashFixes');
   }
   
-function onGameOver(event:ScriptEvent){
+  function onGameOver(event:ScriptEvent){
     super.onGameOver(event);
     if (PlayState.instance.camGame != null && shouldFixFlashEvent) PlayState.instance.camGame.stopFlash();
     if (PlayState.instance.camHUD != null && shouldFixFlashEvent) PlayState.instance.camHUD.stopFlash();
   }
 
-function onSongRetry(event:ScriptEvent){
+  function onSongRetry(event:ScriptEvent){
     super.onSongRetry(event);
     if (PlayState.instance.camGame != null && shouldFixFlashEvent) PlayState.instance.camGame.stopFlash();
     if (PlayState.instance.camHUD != null && shouldFixFlashEvent) PlayState.instance.camHUD.stopFlash();
@@ -72,7 +43,7 @@ class CameraFlashEvent extends ScriptedSongEvent {
   }
 
   public var eventTitle:String = "Extra Events | Camera Flash";
-  public var isEnabled:Bool;
+  public var isEnabled = null;
   /*
   * white = 0xFFFFFFFF
   * red = 0xFFFF0000
@@ -86,9 +57,8 @@ class CameraFlashEvent extends ScriptedSongEvent {
     if (PlayState.instance.isMinimalMode) return;
 
     // Save Stuff
-    var flashManager = ModuleHandler.getModule("extra-events-cameraFlashManager");
-    isEnabled = flashManager?.scriptGet("save").data.isFlashEnabled; // Only works if you relaunch the game and not with hotreloading
-    if (flashManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
+    isEnabled = Save.instance.modOptions.get('extra-events').isFlashEnabled;
+    if (!isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
     var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
     var applyToHud:Bool = data.getBool('applyToHud') != null ? data.getBool('applyToHud') : DEFAULT_APPLYTOHUD;
@@ -123,13 +93,14 @@ class CameraFlashEvent extends ScriptedSongEvent {
         color = 0xFFFFFFFF;
       case 13: // Yellow
         color = 0xFFFFFF00;
+
+      default: color = 0xFFFFFFFF;
     }
 
     var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
 
     if (duration <= 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-      return;
     }
 
     if (!applyToHud) {

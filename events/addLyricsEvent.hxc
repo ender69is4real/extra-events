@@ -6,7 +6,6 @@ import funkin.play.event.SongEvent;
 import funkin.data.event.SongEventSchema;
 
 import funkin.modding.PolymodErrorHandler;
-// import flixel.util.FlxColor; // A dream wish for now
 import funkin.play.event.ScriptedSongEvent;
 
 import funkin.ui.options.OptionsState;
@@ -18,35 +17,7 @@ import flixel.text.FlxText;
 import flixel.text.FlxTextBorderStyle;
 import funkin.Preferences;
 import flixel.util.FlxTimer;
-
-class AddLyricsManager extends ScriptedModule {
-  function new() {
-      super("extra-events-addLyricsManager");
-  }
-  public var save:FlxSave = null;
-
-  override function onCreate(event) {
-    super.onCreate(event);
-    save = new FlxSave();
-    save.bind("extra-events-addLyrics");
-    save?.data.isLyricsEnabled = (save?.data.isLyricsEnabled != null) ? save?.data.isLyricsEnabled : true; // Default is true
-
-    save?.flush();
-  }
-
-override function onStateChangeEnd(event) {
-    super.onStateChangeEnd(event);
-    if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.optionsCodex.pages.get('preferences');
-        if (prefs != null) {
-            prefs.createPrefItemCheckbox("Show Lyrics", "If disabled, charts with placed lyrics will be ignored.", (value:Bool) -> {
-                save?.data.isLyricsEnabled = value;
-                save?.flush();
-            }, save?.data.isLyricsEnabled);
-        }
-    }
-  }
-}
+import funkin.save.Save;
 
 class AddLyricsEvent extends ScriptedSongEvent {
   function new() {
@@ -60,10 +31,10 @@ class AddLyricsEvent extends ScriptedSongEvent {
   **/
 
   public var eventTitle:String = "Extra Events | Add Lyrics";
-  public var isEnabled:Bool;
+  public var isEnabled = null;
   
-  public static var lyricObj:FlxText;
-  public static var currentTimer:FlxTimer;
+  public var lyricObj:FlxText = null;
+  public var currentTimer:FlxTimer = null;
 
   public var DEFAULT_TEXT:String = "Hello!";
   public var DEFAULT_DURATION:Float = 4.0;
@@ -89,20 +60,20 @@ class AddLyricsEvent extends ScriptedSongEvent {
 
     // Prevents stacking the current text by deleting the current one and reseting the timer
     if (lyricObj != null) {
-      if (currentTimer != null) {
-          currentTimer.cancel();
-          currentTimer.destroy();
-          currentTimer = null;
-        }
         lyricObj.kill();
         lyricObj.destroy();
         lyricObj = null;
     }
 
+    if (currentTimer != null) {
+      currentTimer.cancel();
+      currentTimer.destroy();
+      currentTimer = null;
+    }
+
     // Save Stuff
-    var lyricsManager = ModuleHandler.getModule("extra-events-addLyricsManager");
-    isEnabled = lyricsManager?.scriptGet("save")?.data.isLyricsEnabled;
-    if (lyricsManager == null || !isEnabled) return;
+    isEnabled = Save.instance.modOptions.get('extra-events').isLyricsEnabled;
+    if (!isEnabled) return;
 
     var text:String = data.getString('text') != null ? data.getString('text') : DEFAULT_TEXT;
     var duration:Float = data.getFloat('duration') != null ? data.getFloat('duration') : DEFAULT_DURATION;
@@ -127,7 +98,6 @@ class AddLyricsEvent extends ScriptedSongEvent {
     var durSeconds = Conductor.instance.stepLengthMs * duration / 1000;
     if (duration <= 0) {
       PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Duration cannot be less or equal to 0.\nDuration must be greater than 0.");
-      return;
     }
 
     // I'm sure they'll have a color picker at some point
@@ -193,7 +163,7 @@ class AddLyricsEvent extends ScriptedSongEvent {
         textBorderColor = 0xFFFFFF00;
     }
 
-    lyricObj = new FlxText(0, 0, FlxG.width); // x, y, width
+    lyricObj = new FlxText(0, 0, FlxG.width);
     lyricObj.text = text;
     lyricObj.setFormat(Paths.font(font + ".ttf"), fontSize, textColor, "center", FlxTextBorderStyle.OUTLINE, textBorderColor);
     lyricObj.borderSize = borderSize;

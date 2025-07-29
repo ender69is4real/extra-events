@@ -89,12 +89,10 @@ class MovePlayerStrumlineEvent extends ScriptedSongEvent {
       case 'INSTANT':
         cancelSLTween();
         durSeconds = 0; // I didn't test this
-        return;
       default:
         easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
         if (easeFunction == null){
           // trace("Invalid easing function: " + ease);
-          return;
         }
         cancelSLTween();
 
@@ -108,6 +106,9 @@ class MovePlayerStrumlineEvent extends ScriptedSongEvent {
             targetX = Constants.STRUMLINE_X_OFFSET + offSetX; // two offsets bruh
           case "right":
             targetX = FlxG.width / 2 + Constants.STRUMLINE_X_OFFSET + offSetX;
+
+          default:
+            targetX = FlxG.width / 2 - PlayState.instance.playerStrumline.width / 2 + offSetX;
           }
 
         if (targetX != currentPSLPosX) {

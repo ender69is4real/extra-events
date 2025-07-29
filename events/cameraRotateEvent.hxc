@@ -14,40 +14,11 @@ import funkin.data.event.SongEventSchema;
 import funkin.modding.PolymodErrorHandler;
 
 import funkin.ui.options.OptionsState;
-import flixel.util.FlxSave;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.module.ScriptedModule;
 import funkin.data.event.SongEventRegistry;
 import funkin.play.event.ScriptedSongEvent;
-
-class CameraRotateManager extends ScriptedModule {
-  function new() {
-    super("extra-events-cameraRotateManager");
-  }
-  public var save:FlxSave = null;
-
-  override function onCreate(event) {
-    super.onCreate(event);
-    save = new FlxSave();
-    save?.bind("extra-events-cameraRotate");
-    save?.data.isRotateEnabled = (save?.data.isRotateEnabled != null) ? save?.data.isRotateEnabled : true; // Default is true
-
-    save?.flush();
-  }
-
-  override function onStateChangeEnd(event) {
-    super.onStateChangeEnd(event);
-    if (Std.isOfType(event.targetState, OptionsState)) {
-        var prefs = event.targetState.optionsCodex.pages.get('preferences'); 
-        if (prefs != null) {
-            prefs.createPrefItemCheckbox("Rotate Screen Effect", "If disabled, charts with placed rotational screen effects will be ignored.", (value:Bool) -> {
-                save?.data.isRotateEnabled = value;
-                save?.flush();
-            }, save?.data.isRotateEnabled);
-        }
-    }
-  }
-}
+import funkin.save.Save;
 
 class CameraRotateFixes extends ScriptedModule {
   var shouldFixRotateEvent:Bool = true;
@@ -64,7 +35,7 @@ class CameraRotateFixes extends ScriptedModule {
     super.onGameOver(event);
     if (PlayState.instance.camGame != null && PlayState.instance.camGame.angle != 0 && shouldFixRotateEvent) PlayState.instance.camGame.angle = 0;
     if (PlayState.instance.camHUD != null && PlayState.instance.camHUD.angle != 0 && shouldFixRotateEvent) PlayState.instance.camHUD.angle = 0;
-	}
+  }
 
   function onSongRetry(event:ScriptEvent){
     super.onSongRetry(event);
@@ -83,7 +54,7 @@ class CameraRotateEvent extends ScriptedSongEvent {
   **/
 
   public var eventTitle:String = "Extra Events | Camera Rotate";
-  public var isEnabled:Bool;
+  public var isEnabled = null;
 
   // best if we could change both without placing two separate events
   public var DEFAULT_CAMGAME_ANGLE:Float = 10.0;
@@ -97,11 +68,15 @@ class CameraRotateEvent extends ScriptedSongEvent {
   override function handleEvent(data):Void {
     if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
     if (PlayState.instance.isMinimalMode) return;
+    // if (FlxG.onMobile) return;
+    /*
+      * Let's leave it to the genius game designers/charters to sparingly and smartly use this event instead :thumbs-up:
+      * if the player thinks otherwise, just toggle the option off
+    */
 
     // Save Stuff
-    var rotateManager = ModuleHandler.getModule("extra-events-cameraRotateManager");
-    isEnabled = rotateManager?.scriptGet("save").data.isRotateEnabled;
-    if (rotateManager == null || !isEnabled) return; // Check if the option is enabled/disabled every time the event is called
+    isEnabled = Save.instance.modOptions.get('extra-events').isRotateEnabled;
+    if (!isEnabled) return; // Check if the option is enabled/disabled every time the event is called
 
     var toAngle_camGame:Float = data.getFloat('angleCamGame') != null ? data.getFloat('angleCamGame') : DEFAULT_CAMGAME_ANGLE;
     var toAngle_camHUD:Float = data.getFloat('angleCamHUD') != null ? data.getFloat('angleCamHUD') : DEFAULT_CAMHUD_ANGLE;
@@ -117,31 +92,29 @@ class CameraRotateEvent extends ScriptedSongEvent {
 
     switch (ease) {
         case 'INSTANT':
-          if (camGameRotateTween != null) camGameRotateTween.cancel();
-          if (camHUDRotateTween != null) camHUDRotateTween.cancel();
+          cancelCamGameRotation();
+          cancelCamHUDRotation();
           PlayState.instance.camGame.angle = toAngle_camGame;
-          PlayState.instance.camHUD.angle = toAngle_camHUD;
-          return;
+          if (Save.instance.modOptions.get('extra-events').iscamHUDRotateEnabled) PlayState.instance.camHUD.angle = toAngle_camHUD;
         default:
           easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
           if (easeFunction == null){
             // trace("Invalid easing function: " + ease);
-            return;
           }
           rotateCamGame(toAngle_camGame, durSeconds, easeFunction);
-          rotateCamHUD(toAngle_camHUD, durSeconds, easeFunction);
+          if (Save.instance.modOptions.get('extra-events').iscamHUDRotateEnabled) rotateCamHUD(toAngle_camHUD, durSeconds, easeFunction);
     }
     // trace("Angle: " + toAngle + " | Duration: " + duration + " | Easing: " + ease + " | Ease Function: " + easeFunction);
   }
 
-  public function rotateCamGame(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+  public function rotateCamGame(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>) {
     cancelCamGameRotation();
-    if (PlayState.instance.camGame != null && PlayState.instance != null) camGameRotateTween = FlxTween.tween(PlayState.instance.camGame, {angle: toAngle}, duration, {ease: ease});
+    if (PlayState.instance.camGame != null) camGameRotateTween = FlxTween.tween(PlayState.instance.camGame, {angle: toAngle}, duration, {ease: ease});
   }
 
-  public function rotateCamHUD(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>):Void {
+  public function rotateCamHUD(?toAngle:Float, ?duration:Float, ?ease:Null<Float->Float>) {
     cancelCamHUDRotation();
-    if (PlayState.instance.camHUD != null && PlayState.instance != null) camHUDRotateTween = FlxTween.tween(PlayState.instance.camHUD, {angle: toAngle}, duration, {ease: ease});
+    if (PlayState.instance.camHUD != null) camHUDRotateTween = FlxTween.tween(PlayState.instance.camHUD, {angle: toAngle}, duration, {ease: ease});
   }
 
   public function cancelCamGameRotation() {

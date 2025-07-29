@@ -34,7 +34,6 @@ class TrackVolumeEvent extends ScriptedSongEvent {
 
         if (track == null) {
             PolymodErrorHandler.showAlert("Event execution error for " + eventTitle, "Track not found.");
-            return;
         }
 
         switch (track) {
