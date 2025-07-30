@@ -58,9 +58,9 @@ class AddLyricsEvent extends ScriptedSongEvent {
 
     // Prevents stacking the current text by deleting the current one
     if (lyricObj != null) {
-        lyricObj.kill();
-        lyricObj.destroy();
-        lyricObj = null;
+      lyricObj.kill();
+      lyricObj.destroy();
+      lyricObj = null;
     }
 
     // Save Stuff

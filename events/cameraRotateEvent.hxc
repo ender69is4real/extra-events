@@ -68,11 +68,6 @@ class CameraRotateEvent extends ScriptedSongEvent {
   override function handleEvent(data):Void {
     if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
     if (PlayState.instance.isMinimalMode) return;
-    // if (FlxG.onMobile) return;
-    /*
-      * Let's leave it to the genius game designers/charters to sparingly and smartly use this event instead :thumbs-up:
-      * if the player thinks otherwise, just toggle the option off
-    */
 
     // Save Stuff
     isEnabled = Save.instance.modOptions.get('extra-events').isRotateEnabled;

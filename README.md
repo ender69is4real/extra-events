@@ -7,3 +7,8 @@ This includes:
 - Camera Rotate
 - Camera Flash
 - Camera Fade
+- Vignette Effect
+- Lyric Event
+- Move Player Strumline
+- Play A Sound
+- Set Track Volume

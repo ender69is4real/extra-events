@@ -2,11 +2,12 @@
   "title": "Extra Events",
   "description": "Adds more events to experiment with in your charts!\n\nEvents can be disabled/enabled in the options menu.",
   "api_version": "0.7.3",
-  "mod_version": "1.1.0",
+  "mod_version": "1.2.0",
   "contributors": [
     {"name": "MAZ12211", "role": "Coded everything and did most of the work"},
     {"name": "Psych Ward's base game channels", "role": "Major code help + feedback", "url": "https://discord.gg/psychengine"},
     {"name": "Funkin's discussions page", "role": "Major code help", "url": "https://github.com/FunkinCrew/Funkin/discussions"},
+    {"name": "V-Slice Network", "role": "Major code help", "url": "https://discord.gg/83tbbcZ3uT"},
     {"name": "Denoohay", "role": "Permission to use Spooky Mix's event code in some shape or form\nand a few icons (I was exhausted to do them myself)", "url": "https://x.com/Denoohay"}
   ],
   "license": "MIT"
