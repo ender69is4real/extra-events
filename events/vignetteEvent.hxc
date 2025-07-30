@@ -90,7 +90,7 @@ class VignEvent extends ScriptedSongEvent {
     public var vignHandler_Shader = null;
     public var vignHandler_Filter = null;
 
-    public var eventTitle:String = "Vignette Effect";
+    public var eventTitle:String = "Extra Events | Vignette Effect";
 
     public var startIntensity:Float; // min = 1.0, max = 10
     public var intensity_tween:FlxTween = null;
