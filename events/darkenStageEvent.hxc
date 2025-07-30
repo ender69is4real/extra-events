@@ -86,8 +86,9 @@ class DarkenStagePropsEvent extends ScriptedSongEvent {
       // // stageProp.color = 0xFF111111;
       new FlxTimer().start(1/24, (tmr) ->
       {
-        // colorTween = FlxTween.color(stageProp, durArg, stageProp.color, FlxColor.fromRGBFloat(1.0, 0.14, 0.14, alphaArg));
-        colorTween = FlxTween.color(stageProp, durArg, stageProp.color, FlxColor.fromRGBFloat(0, 0, 0, alphaArg));
+        colorTween = FlxTween.color(stageProp, durArg, stageProp.color, FlxColor.fromRGBFloat(0, 0, 0, 0.4));
+        stageProp.color.alphaFloat = 0.4;
+        FlxTween.num(stageProp.color.alphaFloat, alphaArg, durArg);
       });
 
     }

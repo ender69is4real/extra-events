@@ -29,14 +29,18 @@ class movePlayerStrumlineFixes extends ScriptedModule {
   function onSongRetry(event:ScriptEvent){
     super.onSongRetry(event);
     if (PlayState.instance.camHUD != null && shouldFix_MPSLEvent) {
+      
       PlayState.instance.playerStrumline.x = FlxG.width / 2 + Constants.STRUMLINE_X_OFFSET; // Resets the player strumline to its default position
       if (PlayState.instance.opponentStrumline.x != Constants.STRUMLINE_X_OFFSET) PlayState.instance.opponentStrumline.x = Constants.STRUMLINE_X_OFFSET; // same for opponent strumline
+
+      if (PlayState.instance.opponentStrumline.alpha != 1.0) PlayState.instance.opponentStrumline.alpha = 1.0;
       for (opponentStrums in PlayState.instance.opponentStrumline.members) {
         if (opponentStrums.alpha != 1.0) {
-          FlxTween.tween(opponentStrums, {alpha: 1.0}, 1); // Fade in effect for opponent's strums
-          FlxTween.tween(PlayState.instance.opponentStrumline.background, {alpha: Preferences.strumlineBackgroundOpacity / 100.0}, 1); // Fixes a weird bug
+          opponentStrums.alpha = 1.0;
         }
+        if (Preferences.strumlineBackgroundOpacity != null) PlayState.instance.opponentStrumline.background.alpha = Preferences.strumlineBackgroundOpacity / 100.0;
       }
+
     }
   }
 }
@@ -60,7 +64,7 @@ class MovePlayerStrumlineEvent extends ScriptedSongEvent {
 
   public var strumlineTwn:FlxTween = null;
 
-  override function handleEvent(data):Void {
+  override function handleEvent(data) {
     if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
     if (PlayState.instance.isMinimalMode) return;
     if (FlxG.onMobile) return;

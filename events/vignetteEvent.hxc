@@ -45,7 +45,6 @@ class VignHandler extends ScriptedModule {
   public var vignFilter:ShaderFilter;
 
   public var currentIntensity:Float = 0.0;
-  public var vignManager:ScriptedModule = null;
   public var isEnabled = null;
 
   public function new() {
@@ -54,12 +53,12 @@ class VignHandler extends ScriptedModule {
 
 	override function onSongStart(e) {
     super.onSongStart(e);
-    isEnabled = Save.instance.modOptions.get('extra-events').isVignEnabled; // Crash is caused by this
+    isEnabled = Save.instance.modOptions.get('extra-events').isVignEnabled;
 
     if (isEnabled) {
       vignShader = ScriptedFlxRuntimeShader.init('VignEffect');
       vignFilter = new ShaderFilter(vignShader);
-      vignShader.scriptCall("setIntensity", [currentIntensity]);
+      vignShader?.scriptCall("setIntensity", [currentIntensity]);
       if (FlxG.camera.filters == null) FlxG.camera.filters = [vignFilter];
       else FlxG.camera.filters.push(vignFilter);
     }
@@ -106,10 +105,10 @@ class VignEvent extends ScriptedSongEvent {
 
       if (!Save.instance.modOptions.get('extra-events').isVignEnabled) return;
 
-      vignHandler_Shader = vignHandler.scriptGet("vignShader");
-      vignHandler_Filter = vignHandler.scriptGet("vignFilter");
+      vignHandler_Shader = vignHandler?.scriptGet("vignShader");
+      vignHandler_Filter = vignHandler?.scriptGet("vignFilter");
 
-      startIntensity = vignHandler.scriptGet("currentIntensity");
+      startIntensity = vignHandler?.scriptGet("currentIntensity");
 
       var intensity:Float = data.getFloat('intensity') != null ? data.getFloat('intensity') : startIntensity; 
       
@@ -126,9 +125,9 @@ class VignEvent extends ScriptedSongEvent {
 
       switch (ease) {
           case 'INSTANT': // Cancel the tween here.
-            if (intensity_tween != null) intensity_tween.cancel();
-            vignHandler_Shader.scriptCall("setIntensity", [intensity]);
-            vignHandler.scriptSet("currentIntensity", intensity);
+            if (intensity_tween != null || vignHandler_Shader != null) intensity_tween.cancel();
+            vignHandler_Shader?.scriptCall("setIntensity", [intensity]);
+            vignHandler?.scriptSet("currentIntensity", intensity);
           default:
             easeFunction = ReflectUtil.getAnonymousField(FlxEase, ease);
             if (easeFunction == null){
@@ -142,9 +141,9 @@ class VignEvent extends ScriptedSongEvent {
     public function createVig(?intensity:Float, ?duration:Float, ?ease:Null<Float->Float>) {
       cancelCurrentVigTween();
     
-      intensity_tween = FlxTween.num(vignHandler.scriptGet("currentIntensity"), intensity, duration, {ease: ease}, function(value:Float) {
-        vignHandler_Shader.scriptCall("setIntensity", [value]);
-        vignHandler.scriptSet("currentIntensity", value);
+      intensity_tween = FlxTween.num(vignHandler?.scriptGet("currentIntensity"), intensity, duration, {ease: ease}, function(value:Float) {
+        vignHandler_Shader?.scriptCall("setIntensity", [value]);
+        vignHandler?.scriptSet("currentIntensity", value);
       });
 
     }
