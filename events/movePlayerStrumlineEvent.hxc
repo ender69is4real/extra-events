@@ -28,6 +28,7 @@ class movePlayerStrumlineFixes extends ScriptedModule {
 
   function onSongRetry(event:ScriptEvent){
     super.onSongRetry(event);
+    if (FlxG.onMobile) return;
     if (PlayState.instance.camHUD != null && shouldFix_MPSLEvent) {
       
       PlayState.instance.playerStrumline.x = FlxG.width / 2 + Constants.STRUMLINE_X_OFFSET; // Resets the player strumline to its default position
